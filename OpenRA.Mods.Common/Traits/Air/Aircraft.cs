@@ -763,7 +763,9 @@ namespace OpenRA.Mods.Common.Traits
 					return;
 				}
 
-				if (Info.IdleBehavior == IdleBehaviorType.Land && Info.LandableTerrainTypes.Count > 0)
+				if (Info.IdleBehavior != IdleBehaviorType.Land && dat != Info.CruiseAltitude)
+					self.QueueActivity(new TakeOff(self));
+				else if (Info.IdleBehavior == IdleBehaviorType.Land && Info.LandableTerrainTypes.Count > 0)
 					self.QueueActivity(new Land(self));
 				else
 					self.QueueActivity(new FlyIdle(self));

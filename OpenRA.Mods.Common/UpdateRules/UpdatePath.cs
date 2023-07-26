@@ -98,7 +98,6 @@ namespace OpenRA.Mods.Common.UpdateRules
 				new RemoveSequenceHasEmbeddedPalette(),
 				new RenameContrailWidth(),
 				new RemoveNegativeSequenceLength(),
-				new RemoveExperienceFromInfiltrates(),
 			})
 		};
 
