@@ -9,6 +9,8 @@
 #endregion
 
 using System;
+using System.Linq;
+using OpenRA.Mods.Common;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Primitives;
 using OpenRA.Traits;
@@ -34,6 +36,10 @@ namespace OpenRA.Mods.CA.Traits
 		[Desc("Condition to grant when shields are active.")]
 		public readonly string ShieldsUpCondition = null;
 
+		[GrantedConditionReference]
+		[Desc("Condition to grant when shields are damaged.")]
+		public readonly string ShieldsDamagedCondition = null;
+
 		[Desc("Hides selection bar when shield is at max strength.")]
 		public readonly bool HideBarWhenFull = false;
 
@@ -48,24 +54,32 @@ namespace OpenRA.Mods.CA.Traits
 
 	public class Shielded : ConditionalTrait<ShieldedInfo>, ITick, ISync, ISelectionBar, IDamageModifier, INotifyDamage
 	{
+		IHealth gethealth;
+		readonly Lazy<IShieldRegenModifier[]> shieldModifiers;
 		int conditionToken = Actor.InvalidConditionToken;
+		int conditionToken2 = Actor.InvalidConditionToken;
 		Actor self;
 
 		[Sync]
 		int strength;
 		int intervalTicks;
 		int delayTicks;
+		int maxshield;
 
 		public Shielded(ActorInitializer init, ShieldedInfo info)
 			: base(info)
 		{
 			self = init.Self;
+			shieldModifiers = Exts.Lazy(() => self.TraitsImplementing<IShieldRegenModifier>().ToArray());
 		}
 
 		protected override void Created(Actor self)
 		{
 			base.Created(self);
-			strength = Info.MaxStrength;
+			gethealth = self.Trait<IHealth>();
+
+			maxshield = Info.MaxStrength > 0 ? Info.MaxStrength : gethealth.MaxHP;
+			strength = maxshield;
 			ResetRegen();
 		}
 
@@ -79,7 +93,12 @@ namespace OpenRA.Mods.CA.Traits
 			if (IsTraitDisabled)
 				return;
 
-			if (strength == Info.MaxStrength)
+			if (strength == maxshield && conditionToken2 != Actor.InvalidConditionToken)
+				conditionToken2 = self.RevokeCondition(conditionToken2);
+			else if (strength < maxshield && conditionToken2 == Actor.InvalidConditionToken)
+				conditionToken2 = self.GrantCondition(Info.ShieldsDamagedCondition);
+
+			if (strength == maxshield)
 				return;
 
 			if (--delayTicks > 0)
@@ -90,13 +109,13 @@ namespace OpenRA.Mods.CA.Traits
 
 			strength += Info.RegenAmount;
 
-			if (strength > Info.MaxStrength)
-				strength = Info.MaxStrength;
+			if (strength > maxshield)
+				strength = maxshield;
 
 			if (strength > 0 && conditionToken == Actor.InvalidConditionToken)
 				conditionToken = self.GrantCondition(Info.ShieldsUpCondition);
 
-			intervalTicks = Info.RegenInterval;
+			intervalTicks = GetShieldRegenModifier();
 		}
 
 		void INotifyDamage.Damaged(Actor self, AttackInfo e)
@@ -137,15 +156,25 @@ namespace OpenRA.Mods.CA.Traits
 			}
 		}
 
+		public int GetShieldRegenModifier()
+		{
+			return Util.ApplyPercentageModifiers(Info.RegenInterval, shieldModifiers.Value.Select(m => m.GetShieldRegenModifier()));
+		}
+
+		public int GetShieldRegenDelayModifier()
+		{
+			return Util.ApplyPercentageModifiers(Info.RegenDelay, shieldModifiers.Value.Select(m => m.GetShieldRegenModifier()));
+		}
+
 		void ResetRegen()
 		{
-			intervalTicks = Info.RegenInterval;
-			delayTicks = Info.RegenDelay;
+			intervalTicks = GetShieldRegenModifier();
+			delayTicks = GetShieldRegenDelayModifier();
 		}
 
 		float ISelectionBar.GetValue()
 		{
-			if (IsTraitDisabled || !Info.ShowSelectionBar || strength == 0 || (strength == Info.MaxStrength && Info.HideBarWhenFull))
+			if (IsTraitDisabled || !Info.ShowSelectionBar || strength == 0 || (strength == maxshield && Info.HideBarWhenFull))
 				return 0;
 
 			var selected = self.World.Selection.Contains(self);
@@ -154,12 +183,12 @@ namespace OpenRA.Mods.CA.Traits
 			var statusBars = Game.Settings.Game.StatusBars;
 
 			var displayHealth = selected || rollover || (regularWorld && statusBars == StatusBarsType.AlwaysShow)
-				|| (regularWorld && statusBars == StatusBarsType.DamageShow && strength < Info.MaxStrength);
+				|| (regularWorld && statusBars == StatusBarsType.DamageShow && strength < maxshield);
 
 			if (!displayHealth)
 				return 0;
 
-			return (float)strength / Info.MaxStrength;
+			return (float)strength / maxshield;
 		}
 
 		bool ISelectionBar.DisplayWhenEmpty { get { return false; } }
