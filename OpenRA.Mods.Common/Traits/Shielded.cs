@@ -123,20 +123,33 @@ namespace OpenRA.Mods.CA.Traits
 			if (IsTraitDisabled)
 				return;
 
-			if (e.Damage.Value < 0)
-				return;
-
-			ResetRegen();
-
-			if (strength == 0 || e.Damage.Value == 0 || e.Attacker == self)
+			if ((strength == 0 && e.Damage.Value > 0) || e.Damage.Value == 0 || e.Attacker == self)
 				return;
 
 			var damageAmt = Convert.ToInt32(e.Damage.Value / 0.01);
 			var damageTypes = e.Damage.DamageTypes;
 			var excessDamage = damageAmt - strength;
-			strength = Math.Max(strength - damageAmt, 0);
 
 			var health = self.TraitOrDefault<IHealth>();
+
+			if (e.Damage.Value > 0)
+			{
+				strength = Math.Max(strength - damageAmt, 0);
+				ResetRegen();
+			}
+			else if (e.Damage.Value < 0)
+			{
+				strength -= e.Damage.Value;
+				if (strength > maxshield)
+					strength = maxshield;
+
+				if (health != null)
+				{
+					var absorbedDamage = new Damage(-e.Damage.Value, damageTypes);
+					health.InflictDamage(self, self, absorbedDamage, true);
+					return;
+				}
+			}
 
 			if (health != null)
 			{
