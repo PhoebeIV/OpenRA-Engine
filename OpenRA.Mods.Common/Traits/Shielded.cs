@@ -40,6 +40,12 @@ namespace OpenRA.Mods.CA.Traits
 		[Desc("Condition to grant when shields are damaged.")]
 		public readonly string ShieldsDamagedCondition = null;
 
+		[Desc("DamageTypes that bypass the shield")]
+		public readonly BitSet<DamageType> BypassDamageTypes = default;
+
+		[Desc("DamageTypes that bypass the shield")]
+		public readonly BitSet<DamageType> OverrideDamageType = default;
+
 		[Desc("Hides selection bar when shield is at max strength.")]
 		public readonly bool HideBarWhenFull = false;
 
@@ -120,19 +126,28 @@ namespace OpenRA.Mods.CA.Traits
 
 		void INotifyDamage.Damaged(Actor self, AttackInfo e)
 		{
-			if (IsTraitDisabled)
+			var damageTypes = e.Damage.DamageTypes;
+			var overrideTypes = Info.OverrideDamageType;
+			var bypassTypes = Info.BypassDamageTypes;
+			if (IsTraitDisabled || e.Damage.DamageTypes.Overlaps(overrideTypes))
 				return;
 
 			if ((strength == 0 && e.Damage.Value > 0) || e.Damage.Value == 0 || e.Attacker == self)
 				return;
 
 			var damageAmt = Convert.ToInt32(e.Damage.Value / 0.01);
-			var damageTypes = e.Damage.DamageTypes;
 			var excessDamage = damageAmt - strength;
-
 			var health = self.TraitOrDefault<IHealth>();
 
-			if (e.Damage.Value > 0)
+			if (e.Damage.DamageTypes.Overlaps(bypassTypes))
+			{
+				if (e.Damage.Value < 0)
+					health.InflictDamage(self, e.Attacker, new Damage(e.Damage.Value, overrideTypes), true);
+				else
+					health.InflictDamage(self, e.Attacker, new Damage(+(e.Damage.Value * 100), overrideTypes), true);
+				return;
+			}
+			else if (e.Damage.Value > 0)
 			{
 				strength = Math.Max(strength - damageAmt, 0);
 				ResetRegen();
