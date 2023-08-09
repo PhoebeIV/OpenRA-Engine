@@ -197,11 +197,11 @@ namespace OpenRA.Mods.Common.Traits
 		void SyncMultiplayerCount()
 		{
 			var newCount = previews.Count(p => p.Info.Name == "mpspawn");
-			var mp = Players.Players.Where(p => p.Key.StartsWith("Multi")).ToList();
+			var mp = Players.Players.Where(p => p.Key.StartsWith("Multi", StringComparison.Ordinal)).ToList();
 			foreach (var kv in mp)
 			{
 				var name = kv.Key;
-				var index = int.Parse(name[5..]);
+				var index = Exts.ParseInt32Invariant(name[5..]);
 
 				if (index >= newCount)
 				{
@@ -303,12 +303,12 @@ namespace OpenRA.Mods.Common.Traits
 		string NextActorName()
 		{
 			var id = previews.Count;
-			var possibleName = "Actor" + id.ToString();
+			var possibleName = "Actor" + id.ToStringInvariant();
 
 			while (previews.Any(p => p.ID == possibleName))
 			{
 				id++;
-				possibleName = "Actor" + id.ToString();
+				possibleName = "Actor" + id.ToStringInvariant();
 			}
 
 			return possibleName;

@@ -58,7 +58,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 				var player = basic.GetValue("Player", string.Empty);
 				if (!string.IsNullOrEmpty(player))
-					singlePlayer = !player.StartsWith("Multi");
+					singlePlayer = !player.StartsWith("Multi", StringComparison.Ordinal);
 
 				var mapSection = file.GetSection("Map");
 
@@ -121,12 +121,32 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 		{
 			var iniFormat = basicSection.GetValue("NewINIFormat", "0");
 
-			Exts.TryParseIntegerInvariant(iniFormat, out var iniFormatVersion);
+			Exts.TryParseInt32Invariant(iniFormat, out var iniFormatVersion);
 
 			return iniFormatVersion;
 		}
 
 		public abstract void ValidateMapFormat(int format);
+
+		protected MiniYamlNodeBuilder GetWorldNodeBuilderFromRules()
+		{
+			var worldNode = Map.RuleDefinitions.Nodes.FirstOrDefault(n => n.Key == "World");
+			var worldNodeBuilder = worldNode != null
+				? new MiniYamlNodeBuilder(worldNode)
+				: new MiniYamlNodeBuilder("World", new MiniYamlBuilder("", new List<MiniYamlNode>()));
+			return worldNodeBuilder;
+		}
+
+		protected void SaveUpdatedWorldNodeToRules(MiniYamlNodeBuilder worldNodeBuilder)
+		{
+			var nodes = Map.RuleDefinitions.Nodes.ToList();
+			var worldNodeIndex = nodes.FindIndex(n => n.Key == "World");
+			if (worldNodeIndex != -1)
+				nodes[worldNodeIndex] = worldNodeBuilder.Build();
+			else
+				nodes.Add(worldNodeBuilder.Build());
+			Map.RuleDefinitions = Map.RuleDefinitions.WithNodes(nodes);
+		}
 
 		void LoadBriefing(IniFile file)
 		{
@@ -144,21 +164,18 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			if (briefing.Length == 0)
 				return;
 
-			var worldNode = Map.RuleDefinitions.Nodes.FirstOrDefault(n => n.Key == "World");
-			if (worldNode == null)
-			{
-				worldNode = new MiniYamlNode("World", new MiniYaml("", new List<MiniYamlNode>()));
-				Map.RuleDefinitions.Nodes.Add(worldNode);
-			}
+			var worldNodeBuilder = GetWorldNodeBuilderFromRules();
 
-			var missionData = worldNode.Value.Nodes.FirstOrDefault(n => n.Key == "MissionData");
+			var missionData = worldNodeBuilder.Value.Nodes.FirstOrDefault(n => n.Key == "MissionData");
 			if (missionData == null)
 			{
-				missionData = new MiniYamlNode("MissionData", new MiniYaml("", new List<MiniYamlNode>()));
-				worldNode.Value.Nodes.Add(missionData);
+				missionData = new MiniYamlNodeBuilder("MissionData", new MiniYamlBuilder("", new List<MiniYamlNode>()));
+				worldNodeBuilder.Value.Nodes.Add(missionData);
 			}
 
-			missionData.Value.Nodes.Add(new MiniYamlNode("Briefing", briefing.Replace("\n", " ").ToString()));
+			missionData.Value.Nodes.Add(new MiniYamlNodeBuilder("Briefing", briefing.Replace("\n", " ").ToString()));
+
+			SaveUpdatedWorldNodeToRules(worldNodeBuilder);
 		}
 
 		static void ReplaceInvalidTerrainTiles(Map map)
@@ -176,10 +193,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 		static void SetBounds(Map map, IniSection mapSection)
 		{
-			var offsetX = Exts.ParseIntegerInvariant(mapSection.GetValue("X", "0"));
-			var offsetY = Exts.ParseIntegerInvariant(mapSection.GetValue("Y", "0"));
-			var width = Exts.ParseIntegerInvariant(mapSection.GetValue("Width", "0"));
-			var height = Exts.ParseIntegerInvariant(mapSection.GetValue("Height", "0"));
+			var offsetX = Exts.ParseInt32Invariant(mapSection.GetValue("X", "0"));
+			var offsetY = Exts.ParseInt32Invariant(mapSection.GetValue("Y", "0"));
+			var width = Exts.ParseInt32Invariant(mapSection.GetValue("Width", "0"));
+			var height = Exts.ParseInt32Invariant(mapSection.GetValue("Height", "0"));
 
 			var tl = new PPos(offsetX, offsetY);
 			var br = new PPos(offsetX + width - 1, offsetY + height - 1);
@@ -190,7 +207,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 		void LoadVideos(IniFile file, string section)
 		{
-			var videos = new List<MiniYamlNode>();
+			var videos = new List<MiniYamlNodeBuilder>();
 			foreach (var s in file.GetSection(section))
 			{
 				if (s.Value != "x" && s.Value != "X" && s.Value != "<none>")
@@ -198,19 +215,19 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 					switch (s.Key)
 					{
 						case "Intro":
-							videos.Add(new MiniYamlNode("BackgroundVideo", s.Value.ToLowerInvariant() + ".vqa"));
+							videos.Add(new MiniYamlNodeBuilder("BackgroundVideo", s.Value.ToLowerInvariant() + ".vqa"));
 							break;
 						case "Brief":
-							videos.Add(new MiniYamlNode("BriefingVideo", s.Value.ToLowerInvariant() + ".vqa"));
+							videos.Add(new MiniYamlNodeBuilder("BriefingVideo", s.Value.ToLowerInvariant() + ".vqa"));
 							break;
 						case "Action":
-							videos.Add(new MiniYamlNode("StartVideo", s.Value.ToLowerInvariant() + ".vqa"));
+							videos.Add(new MiniYamlNodeBuilder("StartVideo", s.Value.ToLowerInvariant() + ".vqa"));
 							break;
 						case "Win":
-							videos.Add(new MiniYamlNode("WinVideo", s.Value.ToLowerInvariant() + ".vqa"));
+							videos.Add(new MiniYamlNodeBuilder("WinVideo", s.Value.ToLowerInvariant() + ".vqa"));
 							break;
 						case "Lose":
-							videos.Add(new MiniYamlNode("LossVideo", s.Value.ToLowerInvariant() + ".vqa"));
+							videos.Add(new MiniYamlNodeBuilder("LossVideo", s.Value.ToLowerInvariant() + ".vqa"));
 							break;
 					}
 				}
@@ -218,21 +235,18 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 			if (videos.Count > 0)
 			{
-				var worldNode = Map.RuleDefinitions.Nodes.FirstOrDefault(n => n.Key == "World");
-				if (worldNode == null)
-				{
-					worldNode = new MiniYamlNode("World", new MiniYaml("", new List<MiniYamlNode>()));
-					Map.RuleDefinitions.Nodes.Add(worldNode);
-				}
+				var worldNodeBuilder = GetWorldNodeBuilderFromRules();
 
-				var missionData = worldNode.Value.Nodes.FirstOrDefault(n => n.Key == "MissionData");
+				var missionData = worldNodeBuilder.Value.Nodes.FirstOrDefault(n => n.Key == "MissionData");
 				if (missionData == null)
 				{
-					missionData = new MiniYamlNode("MissionData", new MiniYaml("", new List<MiniYamlNode>()));
-					worldNode.Value.Nodes.Add(missionData);
+					missionData = new MiniYamlNodeBuilder("MissionData", new MiniYamlBuilder("", new List<MiniYamlNode>()));
+					worldNodeBuilder.Value.Nodes.Add(missionData);
 				}
 
 				missionData.Value.Nodes.AddRange(videos);
+
+				SaveUpdatedWorldNodeToRules(worldNodeBuilder);
 			}
 		}
 
@@ -264,13 +278,13 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 		void LoadWaypoints(IniSection waypointSection)
 		{
-			var actorCount = Map.ActorDefinitions.Count;
 			var wps = waypointSection
-				.Where(kv => Exts.ParseIntegerInvariant(kv.Value) > 0)
-				.Select(kv => (WaypointNumber: Exts.ParseIntegerInvariant(kv.Key),
-					Location: LocationFromMapOffset(Exts.ParseIntegerInvariant(kv.Value), MapSize)));
+				.Where(kv => Exts.ParseInt32Invariant(kv.Value) > 0)
+				.Select(kv => (WaypointNumber: Exts.ParseInt32Invariant(kv.Key),
+					Location: LocationFromMapOffset(Exts.ParseInt32Invariant(kv.Value), MapSize)));
 
 			// Add waypoint actors skipping duplicate entries
+			var nodes = new List<MiniYamlNode>();
 			foreach (var (waypointNumber, location) in wps.DistinctBy(location => location.Location))
 			{
 				if (!singlePlayer && waypointNumber <= 7)
@@ -281,7 +295,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 						new OwnerInit("Neutral")
 					};
 
-					Map.ActorDefinitions.Add(new MiniYamlNode("Actor" + actorCount++, ar.Save()));
+					nodes.Add(new MiniYamlNode("Actor" + (Map.ActorDefinitions.Count + nodes.Count), ar.Save()));
 					spawnCount++;
 				}
 				else
@@ -292,15 +306,17 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 						new OwnerInit("Neutral")
 					};
 
-					SaveWaypoint(waypointNumber, ar);
+					nodes.Add(SaveWaypoint(waypointNumber, ar));
 				}
 			}
+
+			Map.ActorDefinitions = Map.ActorDefinitions.Concat(nodes).ToArray();
 		}
 
-		public virtual void SaveWaypoint(int waypointNumber, ActorReference waypointReference)
+		public virtual MiniYamlNode SaveWaypoint(int waypointNumber, ActorReference waypointReference)
 		{
 			var waypointName = "waypoint" + waypointNumber;
-			Map.ActorDefinitions.Add(new MiniYamlNode(waypointName, waypointReference.Save()));
+			return new MiniYamlNode(waypointName, waypointReference.Save());
 		}
 
 		void LoadSmudges(IniFile file, string section)
@@ -311,36 +327,35 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			{
 				// loc=type,loc,depth
 				var parts = s.Value.Split(',');
-				var loc = Exts.ParseIntegerInvariant(parts[1]);
+				var loc = Exts.ParseInt32Invariant(parts[1]);
 				var type = parts[0].ToLowerInvariant();
 				var key = $"{loc % MapSize},{loc / MapSize}";
 				var value = $"{type},{parts[2]}";
 				var node = new MiniYamlNode(key, value);
-				if (type.StartsWith("sc"))
+				if (type.StartsWith("sc", StringComparison.Ordinal))
 					scorches.Add(node);
-				else if (type.StartsWith("cr"))
+				else if (type.StartsWith("cr", StringComparison.Ordinal))
 					craters.Add(node);
 			}
 
-			var worldNode = Map.RuleDefinitions.Nodes.FirstOrDefault(n => n.Key == "World");
-			worldNode ??= new MiniYamlNode("World", new MiniYaml("", new List<MiniYamlNode>()));
+			var worldNodeBuilder = GetWorldNodeBuilderFromRules();
 
 			if (scorches.Count > 0)
 			{
 				var initialScorches = new MiniYamlNode("InitialSmudges", new MiniYaml("", scorches));
-				var smudgeLayer = new MiniYamlNode("SmudgeLayer@SCORCH", new MiniYaml("", new List<MiniYamlNode>() { initialScorches }));
-				worldNode.Value.Nodes.Add(smudgeLayer);
+				var smudgeLayer = new MiniYamlNodeBuilder("SmudgeLayer@SCORCH", new MiniYamlBuilder("", new List<MiniYamlNode>() { initialScorches }));
+				worldNodeBuilder.Value.Nodes.Add(smudgeLayer);
 			}
 
 			if (craters.Count > 0)
 			{
 				var initialCraters = new MiniYamlNode("InitialSmudges", new MiniYaml("", craters));
-				var smudgeLayer = new MiniYamlNode("SmudgeLayer@CRATER", new MiniYaml("", new List<MiniYamlNode>() { initialCraters }));
-				worldNode.Value.Nodes.Add(smudgeLayer);
+				var smudgeLayer = new MiniYamlNodeBuilder("SmudgeLayer@CRATER", new MiniYamlBuilder("", new List<MiniYamlNode>() { initialCraters }));
+				worldNodeBuilder.Value.Nodes.Add(smudgeLayer);
 			}
 
-			if (worldNode.Value.Nodes.Count > 0 && !Map.RuleDefinitions.Nodes.Contains(worldNode))
-				Map.RuleDefinitions.Nodes.Add(worldNode);
+			if (worldNodeBuilder.Value.Nodes.Count > 0)
+				SaveUpdatedWorldNodeToRules(worldNodeBuilder);
 		}
 
 		// TODO: fix this -- will have bitrotted pretty badly.
@@ -395,6 +410,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 		public void LoadActors(IniFile file, string section, List<string> players, Map map)
 		{
+			var nodes = new List<MiniYamlNode>();
 			foreach (var s in file.GetSection(section, true))
 			{
 				// Structures: num=owner,type,health,location,turret-facing,trigger
@@ -409,9 +425,9 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 					if (!players.Contains(parts[0]))
 						players.Add(parts[0]);
 
-					var loc = Exts.ParseIntegerInvariant(parts[3]);
-					var health = Exts.ParseIntegerInvariant(parts[2]) * 100 / 256;
-					var facing = (section == "INFANTRY") ? Exts.ParseIntegerInvariant(parts[6]) : Exts.ParseIntegerInvariant(parts[4]);
+					var loc = Exts.ParseInt32Invariant(parts[3]);
+					var health = Exts.ParseInt32Invariant(parts[2]) * 100 / 256;
+					var facing = (section == "INFANTRY") ? Exts.ParseInt32Invariant(parts[6]) : Exts.ParseInt32Invariant(parts[4]);
 
 					var actorType = parts[1].ToLowerInvariant();
 
@@ -427,20 +443,20 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 						actor.Add(new FacingInit(new WAngle(1024 - 4 * facing)));
 
 					if (section == "INFANTRY")
-						actor.Add(new SubCellInit((SubCell)Exts.ParseByte(parts[4])));
-
-					var actorCount = map.ActorDefinitions.Count;
+						actor.Add(new SubCellInit((SubCell)Exts.ParseByteInvariant(parts[4])));
 
 					if (!map.Rules.Actors.ContainsKey(parts[1].ToLowerInvariant()))
 						Console.WriteLine($"Ignoring unknown actor type: `{parts[1].ToLowerInvariant()}`");
 					else
-						map.ActorDefinitions.Add(new MiniYamlNode("Actor" + actorCount++, actor.Save()));
+						nodes.Add(new MiniYamlNode("Actor" + (map.ActorDefinitions.Count + nodes.Count), actor.Save()));
 				}
 				catch (Exception)
 				{
 					Console.WriteLine($"Malformed actor definition: `{s}`");
 				}
 			}
+
+			map.ActorDefinitions = map.ActorDefinitions.Concat(nodes).ToArray();
 		}
 
 		public abstract string ParseTreeActor(string input);
@@ -451,9 +467,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			if (terrain == null)
 				return;
 
+			var nodes = new List<MiniYamlNode>();
 			foreach (var kv in terrain)
 			{
-				var loc = Exts.ParseIntegerInvariant(kv.Key);
+				var loc = Exts.ParseInt32Invariant(kv.Key);
 				var treeActor = ParseTreeActor(kv.Value);
 
 				var ar = new ActorReference(treeActor)
@@ -462,9 +479,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 					new OwnerInit("Neutral")
 				};
 
-				var actorCount = Map.ActorDefinitions.Count;
-				Map.ActorDefinitions.Add(new MiniYamlNode("Actor" + actorCount++, ar.Save()));
+				nodes.Add(new MiniYamlNode("Actor" + (Map.ActorDefinitions.Count + nodes.Count), ar.Save()));
 			}
+
+			Map.ActorDefinitions = Map.ActorDefinitions.Concat(nodes).ToArray();
 		}
 	}
 

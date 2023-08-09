@@ -21,13 +21,13 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 			"Going forward, the value of the `Delay` attribute of the `DrawLineToTarget` trait will be\n" +
 			"interpreted as milliseconds instead of ticks.\n";
 
-		public override IEnumerable<string> UpdateActorNode(ModData modData, MiniYamlNode actorNode)
+		public override IEnumerable<string> UpdateActorNode(ModData modData, MiniYamlNodeBuilder actorNode)
 		{
 			foreach (var dltt in actorNode.ChildrenMatching("DrawLineToTarget", includeRemovals: false))
 			{
 				var delayNode = dltt.LastChildMatching("Delay", false);
-				if (delayNode != null && Exts.TryParseIntegerInvariant(delayNode.Value.Value, out var delay))
-					delayNode.ReplaceValue((delay * 1000 / 25).ToString());
+				if (delayNode != null && Exts.TryParseInt32Invariant(delayNode.Value.Value, out var delay))
+					delayNode.ReplaceValue((delay * 1000 / 25).ToStringInvariant());
 			}
 
 			yield break;

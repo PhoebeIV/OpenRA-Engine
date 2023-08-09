@@ -664,6 +664,18 @@ dotnet_diagnostic.CA1200.severity = warning
 ### Globalization Rules
 ### https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/globalization-warnings
 
+# Specify 'CultureInfo'.
+dotnet_diagnostic.CA1304.severity = warning
+
+# Specify 'IFormatProvider'.
+dotnet_diagnostic.CA1305.severity = warning
+
+# Specify 'StringComparison' for correctness.
+dotnet_diagnostic.CA1310.severity = warning
+
+# Specify a culture or use an invariant version.
+dotnet_diagnostic.CA1311.severity = warning
+
 ### Portability and Interoperability Rules
 ### https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/interoperability-warnings
 
@@ -880,8 +892,14 @@ dotnet_diagnostic.CA2247.severity = warning
 # Provide correct enum argument to Enum.HasFlag.
 dotnet_diagnostic.CA2248.severity = warning
 
+# Consider using String.Contains instead of String.IndexOf.
+dotnet_diagnostic.CA2249.severity = warning
+
 # Use ThrowIfCancellationRequested.
 dotnet_diagnostic.CA2250.severity = warning
+
+# Use String.Equals over String.Compare.
+dotnet_diagnostic.CA2251.severity = warning
 
 # Ensure ThreadStatic is only used with static fields.
 dotnet_diagnostic.CA2259.severity = warning

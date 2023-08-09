@@ -86,9 +86,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			if (overlay == null)
 				return;
 
+			var nodes = new List<MiniYamlNode>();
 			foreach (var kv in overlay)
 			{
-				var loc = Exts.ParseIntegerInvariant(kv.Key);
+				var loc = Exts.ParseInt32Invariant(kv.Key);
 				var cell = new CPos(loc % MapSize, loc / MapSize);
 
 				var res = (Type: (byte)0, Index: (byte)0);
@@ -105,10 +106,11 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 						new OwnerInit("Neutral")
 					};
 
-					var actorCount = Map.ActorDefinitions.Count;
-					Map.ActorDefinitions.Add(new MiniYamlNode("Actor" + actorCount++, ar.Save()));
+					nodes.Add(new MiniYamlNode("Actor" + (Map.ActorDefinitions.Count + nodes.Count), ar.Save()));
 				}
 			}
+
+			Map.ActorDefinitions = Map.ActorDefinitions.Concat(nodes).ToArray();
 		}
 
 		public override string ParseTreeActor(string input)
@@ -170,7 +172,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			ReadOverlay(file);
 		}
 
-		public override void SaveWaypoint(int waypointNumber, ActorReference waypointReference)
+		public override MiniYamlNode SaveWaypoint(int waypointNumber, ActorReference waypointReference)
 		{
 			var waypointName = "waypoint" + waypointNumber;
 			if (waypointNumber == 25)
@@ -179,7 +181,7 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 				waypointName = "DefaultCameraPosition";
 			else if (waypointNumber == 27)
 				waypointName = "DefaultChinookTarget";
-			Map.ActorDefinitions.Add(new MiniYamlNode(waypointName, waypointReference.Save()));
+			return new MiniYamlNode(waypointName, waypointReference.Save());
 		}
 	}
 }

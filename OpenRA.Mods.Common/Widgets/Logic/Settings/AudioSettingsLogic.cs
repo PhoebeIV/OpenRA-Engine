@@ -113,7 +113,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				s => WidgetUtils.TruncateText(s.Label, audioDeviceDropdown.UsableWidth, deviceFont));
 			audioDeviceDropdown.GetText = () => deviceLabel.Update(soundDevice);
 
-			var restartDesc = panel.Get("RESTART_REQUIRED_DESC");
+			var restartDesc = panel.Get("AUDIO_RESTART_REQUIRED_DESC");
 			restartDesc.IsVisible = () => soundDevice.Device != OriginalSoundDevice;
 
 			SettingsUtils.AdjustSettingsScrollPanelLayout(scrollPanel);
@@ -154,7 +154,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		void ShowAudioDeviceDropdown(DropDownButtonWidget dropdown, SoundDevice[] devices, ScrollPanelWidget scrollPanel)
 		{
 			var i = 0;
-			var options = devices.ToDictionary(d => i++.ToString(), d => d);
+			var options = devices.ToDictionary(d => i++.ToStringInvariant(), d => d);
 
 			ScrollItemWidget SetupItem(string o, ScrollItemWidget itemTemplate)
 			{

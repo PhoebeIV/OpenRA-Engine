@@ -102,16 +102,15 @@ namespace OpenRA.Network
 		{
 			var root = new List<MiniYamlNode>
 			{
-				new MiniYamlNode("Protocol", ProtocolVersion.ToString()),
+				new MiniYamlNode("Protocol", ProtocolVersion.ToStringInvariant()),
 				new MiniYamlNode("Key", key)
 			};
 
 			if (arguments != null)
 			{
-				var argumentsNode = new MiniYaml("");
-				var i = 0;
-				foreach (var argument in arguments.Select(a => new FluentArgument(a.Key, a.Value)))
-					argumentsNode.Nodes.Add(new MiniYamlNode("Argument@" + i++, FieldSaver.Save(argument)));
+				var argumentsNode = new MiniYaml("", arguments
+					.Select(a => new FluentArgument(a.Key, a.Value))
+					.Select((argument, i) => new MiniYamlNode("Argument@" + i, FieldSaver.Save(argument))));
 
 				root.Add(new MiniYamlNode("Arguments", argumentsNode));
 			}
