@@ -230,7 +230,7 @@ namespace OpenRA.Mods.AS.Traits
 				w.Add(slave);
 				var mobile = slave.TraitOrDefault<Mobile>();
 				if (mobile != null)
-					mobile.Nudge(slave);
+					self.QueueActivity(false, new Nudge(slave));
 			});
 		}
 

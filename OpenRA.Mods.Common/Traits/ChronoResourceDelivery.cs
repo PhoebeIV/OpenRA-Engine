@@ -57,7 +57,7 @@ namespace OpenRA.Mods.AS.Traits
 		public override object Create(ActorInitializer init) { return new ChronoResourceDelivery(this); }
 	}
 
-	public class ChronoResourceDelivery : ConditionalTrait<ChronoResourceDeliveryInfo>, INotifyHarvesterAction, ITick
+	public class ChronoResourceDelivery : ConditionalTrait<ChronoResourceDeliveryInfo>, INotifyHarvestAction, ITick
 	{
 		CPos? destination = null;
 		int ticksTillCheck = 0;
@@ -97,14 +97,14 @@ namespace OpenRA.Mods.AS.Traits
 
 		public void MovingToRefinery(Actor self, Actor refineryActor)
 		{
-			var iao = refineryActor.Trait<IAcceptResources>();
-			var location = self.World.Map.CellContaining(iao.DeliveryPosition);
+			var iao = refineryActor.Trait<IDockHost>();
+			var location = self.World.Map.CellContaining(iao.DockPosition);
 		
 
 			if (destination != null && destination.Value != location)
 				ticksTillCheck = 0;
 
-			dockFacing = refineryActor.Trait<IAcceptResources>().DeliveryAngle;
+			dockFacing = refineryActor.Trait<IDockHost>().DockAngle;
 
 			destination = location;
 		}

@@ -94,7 +94,7 @@ namespace OpenRA.Mods.Common.Traits
 	}
 
 	public class Mirage : PausableConditionalTrait<MirageInfo>, INotifyDamage, IEffectiveOwner, INotifyUnloadCargo, INotifyDemolition, INotifyInfiltration,
-		INotifyAttack, ITick, INotifyCreated, INotifyHarvesterAction, INotifyDockClient
+		INotifyAttack, ITick, INotifyCreated, INotifyHarvestAction, INotifyDockClient
 	{
 		[Sync]
 		private int remainingTime;
@@ -211,13 +211,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		protected override void TraitDisabled(Actor self) { Reveal(); }
 
-		void INotifyHarvesterAction.MovingToResources(Actor self, CPos targetCell) { }
+		void INotifyHarvestAction.MovingToResources(Actor self, CPos targetCell) { }
 
-		void INotifyHarvesterAction.MovingToRefinery(Actor self, Actor refineryActor) { }
+		void INotifyHarvestAction.MovementCancelled(Actor self) { }
 
-		void INotifyHarvesterAction.MovementCancelled(Actor self) { }
-
-		void INotifyHarvesterAction.Harvested(Actor self, string resourceType) { }
+		void INotifyHarvestAction.Harvested(Actor self, string resourceType) { }
 
 		void INotifyDockClient.Docked(Actor self, Actor host)
 		{
