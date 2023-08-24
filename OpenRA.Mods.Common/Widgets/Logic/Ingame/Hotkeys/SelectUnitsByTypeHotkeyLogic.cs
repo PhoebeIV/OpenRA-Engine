@@ -29,6 +29,15 @@ namespace OpenRA.Mods.Common.Widgets.Logic.Ingame
 		public readonly string ClickSound = ChromeMetrics.Get<string>("ClickSound");
 		public readonly string ClickDisabledSound = ChromeMetrics.Get<string>("ClickDisabledSound");
 
+		[TranslationReference]
+		const string NothingSelected = "nothing-selected";
+
+		[TranslationReference("units")]
+		const string SelectedUnitsAcrossScreen = "selected-units-across-screen";
+
+		[TranslationReference("units")]
+		const string SelectedUnitsAcrossMap = "selected-units-across-map";
+
 		[ObjectCreator.UseCtor]
 		public SelectUnitsByTypeHotkeyLogic(Widget widget, ModData modData, WorldRenderer worldRenderer, World world, Dictionary<string, MiniYaml> logicArgs)
 			: base(widget, modData, "SelectUnitsByTypeKey", "WORLD_KEYHANDLER", logicArgs)
@@ -43,9 +52,9 @@ namespace OpenRA.Mods.Common.Widgets.Logic.Ingame
 			if (world.IsGameOver)
 				return false;
 
-			if (!selection.Actors.Any())
+			if (selection.Actors.Count == 0)
 			{
-				TextNotificationsManager.AddFeedbackLine("Nothing selected.");
+				TextNotificationsManager.AddFeedbackLine(NothingSelected);
 				Game.Sound.PlayNotification(world.Map.Rules, world.LocalPlayer, "Sounds", ClickDisabledSound, null);
 
 				return false;
@@ -69,22 +78,13 @@ namespace OpenRA.Mods.Common.Widgets.Logic.Ingame
 			var newSelection = SelectionUtils.SelectActorsOnScreen(world, worldRenderer, selectedClasses, eligiblePlayers).ToList();
 
 			// Check if selecting actors on the screen has selected new units
-			if (newSelection.Count > selection.Actors.Count())
-			{
-				if (newSelection.Count > 1)
-					TextNotificationsManager.AddFeedbackLine($"Selected {newSelection.Count} units across screen.");
-				else
-					TextNotificationsManager.AddFeedbackLine("Selected one unit across screen.");
-			}
+			if (newSelection.Count > selection.Actors.Count)
+				TextNotificationsManager.AddFeedbackLine(SelectedUnitsAcrossScreen, Translation.Arguments("units", newSelection.Count));
 			else
 			{
 				// Select actors in the world that have the same selection class as one of the already selected actors
 				newSelection = SelectionUtils.SelectActorsInWorld(world, selectedClasses, eligiblePlayers).ToList();
-
-				if (newSelection.Count > 1)
-					TextNotificationsManager.AddFeedbackLine($"Selected {newSelection.Count} units across map.");
-				else
-					TextNotificationsManager.AddFeedbackLine("Selected one unit across map.");
+				TextNotificationsManager.AddFeedbackLine(SelectedUnitsAcrossMap, Translation.Arguments("units", newSelection.Count));
 			}
 
 			selection.Combine(world, newSelection, true, false);

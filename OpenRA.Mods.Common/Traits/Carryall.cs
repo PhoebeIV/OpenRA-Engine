@@ -102,8 +102,8 @@ namespace OpenRA.Mods.Common.Traits
 
 		// The actor we are currently carrying.
 		[Sync]
-		public Actor Carryable { get; private set; }
-		public CarryallState State { get; private set; }
+		public Actor Carryable { get; protected set; }
+		public CarryallState State { get; protected set; }
 
 		WAngle cachedFacing;
 		IActorPreview[] carryablePreview;
@@ -183,11 +183,6 @@ namespace OpenRA.Mods.Common.Traits
 			UnreserveCarryable(self);
 		}
 
-		public virtual bool RequestTransportNotify(Actor self, Actor carryable, CPos destination)
-		{
-			return false;
-		}
-
 		public virtual WVec OffsetForCarryable(Actor self, Actor carryable)
 		{
 			return Info.LocalOffset - carryable.Info.TraitInfo<CarryableInfo>().LocalOffset;
@@ -239,7 +234,7 @@ namespace OpenRA.Mods.Common.Traits
 			CarryableOffset = WVec.Zero;
 		}
 
-		public virtual bool ReserveCarryable(Actor self, Actor carryable)
+		public bool ReserveCarryable(Actor self, Actor carryable)
 		{
 			if (State == CarryallState.Reserved)
 				UnreserveCarryable(self);

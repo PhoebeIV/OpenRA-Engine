@@ -45,6 +45,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Speech notification to play when the player does not have any funds.")]
 		public readonly string InsufficientFundsNotification = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification to display when the player does not have any funds.")]
 		public readonly string InsufficientFundsTextNotification = null;
 
@@ -187,7 +188,7 @@ namespace OpenRA.Mods.Common.Traits
 				{
 					lastNotificationTime = Game.RunTime;
 					Game.Sound.PlayNotification(owner.World.Map.Rules, owner, "Speech", Info.InsufficientFundsNotification, owner.Faction.InternalName);
-					TextNotificationsManager.AddTransientLine(Info.InsufficientFundsTextNotification, owner);
+					TextNotificationsManager.AddTransientLine(owner, Info.InsufficientFundsTextNotification);
 				}
 
 				return false;

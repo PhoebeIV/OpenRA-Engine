@@ -32,6 +32,7 @@ namespace OpenRA.Mods.Common.Traits
 			"The filename of the audio is defined per faction in notifications.yaml.")]
 		public readonly string ReadyAudio = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification displayed when production is activated.")]
 		public readonly string ReadyTextNotification = null;
 
@@ -40,6 +41,7 @@ namespace OpenRA.Mods.Common.Traits
 			"The filename of the audio is defined per faction in notifications.yaml.")]
 		public readonly string BlockedAudio = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification displayed when the exit is jammed.")]
 		public readonly string BlockedTextNotification = null;
 
@@ -99,12 +101,12 @@ namespace OpenRA.Mods.Common.Traits
 			if (activated)
 			{
 				Game.Sound.PlayNotification(self.World.Map.Rules, manager.Self.Owner, "Speech", info.ReadyAudio, self.Owner.Faction.InternalName);
-				TextNotificationsManager.AddTransientLine(info.ReadyTextNotification, manager.Self.Owner);
+				TextNotificationsManager.AddTransientLine(manager.Self.Owner, info.ReadyTextNotification);
 			}
 			else
 			{
 				Game.Sound.PlayNotification(self.World.Map.Rules, manager.Self.Owner, "Speech", info.BlockedAudio, self.Owner.Faction.InternalName);
-				TextNotificationsManager.AddTransientLine(info.BlockedTextNotification, manager.Self.Owner);
+				TextNotificationsManager.AddTransientLine(manager.Self.Owner, info.BlockedTextNotification);
 			}
 		}
 	}

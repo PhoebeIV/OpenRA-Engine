@@ -130,6 +130,7 @@ namespace OpenRA
 
 			// Continue resolving traits as long as possible.
 			// Each time we resolve some traits, this means dependencies for other traits may then be possible to satisfy in the next pass.
+#pragma warning disable CA1851 // Possible multiple enumerations of 'IEnumerable' collection
 			var readyToResolve = more.ToList();
 			while (readyToResolve.Count != 0)
 			{
@@ -138,6 +139,7 @@ namespace OpenRA
 				readyToResolve.Clear();
 				readyToResolve.AddRange(more);
 			}
+#pragma warning restore CA1851
 
 			if (unresolved.Count != 0)
 			{
@@ -185,7 +187,7 @@ namespace OpenRA
 		public bool HasTraitInfo<T>() where T : ITraitInfoInterface { return traits.Contains<T>(); }
 		public T TraitInfo<T>() where T : ITraitInfoInterface { return traits.Get<T>(); }
 		public T TraitInfoOrDefault<T>() where T : ITraitInfoInterface { return traits.GetOrDefault<T>(); }
-		public IEnumerable<T> TraitInfos<T>() where T : ITraitInfoInterface { return traits.WithInterface<T>(); }
+		public IReadOnlyCollection<T> TraitInfos<T>() where T : ITraitInfoInterface { return traits.WithInterface<T>(); }
 
 		public BitSet<TargetableType> GetAllTargetTypes()
 		{

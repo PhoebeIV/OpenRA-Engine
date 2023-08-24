@@ -27,6 +27,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Speech to play for the warning.")]
 		public readonly string Notification = "SilosNeeded";
 
+		[TranslationReference(optional: true)]
 		[Desc("Text to display for the warning.")]
 		public readonly string TextNotification = null;
 
@@ -55,7 +56,7 @@ namespace OpenRA.Mods.Common.Traits
 				if (resources.Resources > info.Threshold * resources.ResourceCapacity / 100)
 				{
 					Game.Sound.PlayNotification(self.World.Map.Rules, owner, "Speech", info.Notification, owner.Faction.InternalName);
-					TextNotificationsManager.AddTransientLine(info.TextNotification, owner);
+					TextNotificationsManager.AddTransientLine(owner, info.TextNotification);
 				}
 
 				lastSiloAdviceTime = Game.RunTime;

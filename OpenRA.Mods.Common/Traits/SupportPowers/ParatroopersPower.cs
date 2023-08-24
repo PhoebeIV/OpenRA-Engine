@@ -30,6 +30,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Speech notification to play when entering the drop zone.")]
 		public readonly string ReinforcementsArrivedSpeechNotification = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification to display when entering the drop zone.")]
 		public readonly string ReinforcementsArrivedTextNotification = null;
 
@@ -141,7 +142,7 @@ namespace OpenRA.Mods.Common.Traits
 					Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech",
 						info.ReinforcementsArrivedSpeechNotification, self.Owner.Faction.InternalName);
 
-					TextNotificationsManager.AddTransientLine(info.ReinforcementsArrivedTextNotification, self.Owner);
+					TextNotificationsManager.AddTransientLine(self.Owner, info.ReinforcementsArrivedTextNotification);
 				}
 
 				aircraftInRange[a] = true;

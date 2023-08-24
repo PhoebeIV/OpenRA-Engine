@@ -49,6 +49,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Speech notification to play when setting a new rallypoint.")]
 		public readonly string Notification = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification to display when setting a new rallypoint.")]
 		public readonly string TextNotification = null;
 
@@ -104,7 +105,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (order.OrderID == OrderID)
 			{
 				Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech", Info.Notification, self.Owner.Faction.InternalName);
-				TextNotificationsManager.AddTransientLine(Info.TextNotification, self.Owner);
+				TextNotificationsManager.AddTransientLine(self.Owner, Info.TextNotification);
 
 				return new Order(order.OrderID, self, target, queued)
 				{

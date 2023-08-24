@@ -27,6 +27,7 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string SpeechNotification = null;
 
 		[Desc("The text notification to display when the player is low power.")]
+		[TranslationReference(optional: true)]
 		public readonly string TextNotification = null;
 
 		public override object Create(ActorInitializer init) { return new PowerManager(init.Self, this); }
@@ -167,7 +168,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (PlayLowPowerNotification && isLowPower && Game.RunTime > lastPowerAdviceTime + info.AdviceInterval)
 			{
 				Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech", info.SpeechNotification, self.Owner.Faction.InternalName);
-				TextNotificationsManager.AddTransientLine(info.TextNotification, self.Owner);
+				TextNotificationsManager.AddTransientLine(self.Owner, info.TextNotification);
 
 				lastPowerAdviceTime = Game.RunTime;
 			}

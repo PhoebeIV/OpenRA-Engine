@@ -30,8 +30,9 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Speech notification to play.")]
 		public readonly string Notification = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification to display.")]
-		public string TextNotification = null;
+		public readonly string TextNotification = null;
 
 		[Desc("Whether to show the cash tick indicators rising from the actor.")]
 		public readonly bool ShowTicks = true;

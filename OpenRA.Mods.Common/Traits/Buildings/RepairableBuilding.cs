@@ -47,10 +47,11 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string RepairCondition = null;
 
 		[NotificationReference("Speech")]
-		[Desc("Speech notification to play when the repair process is started.")]
+		[Desc("Voice line to play when repairs are started.")]
 		public readonly string RepairingNotification = null;
 
-		[Desc("Text notification to display when the repair process is started.")]
+		[TranslationReference(optional: true)]
+		[Desc("Transient text message to display when repairs are started.")]
 		public readonly string RepairingTextNotification = null;
 
 		[NotificationReference("Speech")]
@@ -114,10 +115,10 @@ namespace OpenRA.Mods.Common.Traits
 			if (Repairers.Remove(player))
 			{
 				UpdateCondition(self);
-				if (!Repairers.Any())
+				if (Repairers.Count == 0)
 				{
 					Game.Sound.PlayNotification(self.World.Map.Rules, player, "Speech", Info.RepairingStoppedNotification, player.Faction.InternalName);
-					TextNotificationsManager.AddTransientLine(Info.RepairingStoppedTextNotification, self.Owner);
+					TextNotificationsManager.AddTransientLine(self.Owner, Info.RepairingStoppedTextNotification);
 				}
 
 				return;
@@ -130,7 +131,7 @@ namespace OpenRA.Mods.Common.Traits
 			Repairers.Add(player);
 
 			Game.Sound.PlayNotification(self.World.Map.Rules, player, "Speech", Info.RepairingNotification, player.Faction.InternalName);
-			TextNotificationsManager.AddTransientLine(Info.RepairingTextNotification, self.Owner);
+			TextNotificationsManager.AddTransientLine(self.Owner, Info.RepairingTextNotification);
 
 			UpdateCondition(self);
 		}

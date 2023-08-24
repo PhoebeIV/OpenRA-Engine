@@ -53,6 +53,7 @@ namespace OpenRA.Mods.Common.Traits
 		[NotificationReference("Speech")]
 		public readonly string DetectedSpeechNotification = null;
 
+		[TranslationReference(optional: true)]
 		public readonly string DetectedTextNotification = null;
 
 		public readonly string BeginChargeSound = null;
@@ -60,6 +61,7 @@ namespace OpenRA.Mods.Common.Traits
 		[NotificationReference("Speech")]
 		public readonly string BeginChargeSpeechNotification = null;
 
+		[TranslationReference(optional: true)]
 		public readonly string BeginChargeTextNotification = null;
 
 		public readonly string EndChargeSound = null;
@@ -67,6 +69,7 @@ namespace OpenRA.Mods.Common.Traits
 		[NotificationReference("Speech")]
 		public readonly string EndChargeSpeechNotification = null;
 
+		[TranslationReference(optional: true)]
 		public readonly string EndChargeTextNotification = null;
 
 		public readonly string SelectTargetSound = null;
@@ -74,6 +77,7 @@ namespace OpenRA.Mods.Common.Traits
 		[NotificationReference("Speech")]
 		public readonly string SelectTargetSpeechNotification = null;
 
+		[TranslationReference(optional: true)]
 		public readonly string SelectTargetTextNotification = null;
 
 		public readonly string InsufficientPowerSound = null;
@@ -81,6 +85,7 @@ namespace OpenRA.Mods.Common.Traits
 		[NotificationReference("Speech")]
 		public readonly string InsufficientPowerSpeechNotification = null;
 
+		[TranslationReference(optional: true)]
 		public readonly string InsufficientPowerTextNotification = null;
 
 		public readonly string LaunchSound = null;
@@ -88,6 +93,7 @@ namespace OpenRA.Mods.Common.Traits
 		[NotificationReference("Speech")]
 		public readonly string LaunchSpeechNotification = null;
 
+		[TranslationReference(optional: true)]
 		public readonly string LaunchTextNotification = null;
 
 		public readonly string IncomingSound = null;
@@ -95,6 +101,7 @@ namespace OpenRA.Mods.Common.Traits
 		[NotificationReference("Speech")]
 		public readonly string IncomingSpeechNotification = null;
 
+		[TranslationReference(optional: true)]
 		public readonly string IncomingTextNotification = null;
 
 		[Desc("Defines to which players the timer is shown.")]
@@ -166,7 +173,7 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				Game.Sound.Play(SoundType.UI, Info.DetectedSound);
 				Game.Sound.PlayNotification(self.World.Map.Rules, player, "Speech", info.DetectedSpeechNotification, player.Faction.InternalName);
-				TextNotificationsManager.AddTransientLine(info.DetectedTextNotification, player);
+				TextNotificationsManager.AddTransientLine(player, info.DetectedTextNotification);
 			}
 		}
 
@@ -181,7 +188,7 @@ namespace OpenRA.Mods.Common.Traits
 			Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech",
 				Info.BeginChargeSpeechNotification, self.Owner.Faction.InternalName);
 
-			TextNotificationsManager.AddTransientLine(Info.BeginChargeTextNotification, self.Owner);
+			TextNotificationsManager.AddTransientLine(self.Owner, Info.BeginChargeTextNotification);
 		}
 
 		public virtual void Charged(Actor self, string key)
@@ -190,7 +197,7 @@ namespace OpenRA.Mods.Common.Traits
 			Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech",
 				Info.EndChargeSpeechNotification, self.Owner.Faction.InternalName);
 
-			TextNotificationsManager.AddTransientLine(Info.EndChargeTextNotification, self.Owner);
+			TextNotificationsManager.AddTransientLine(self.Owner, Info.EndChargeTextNotification);
 
 			foreach (var notify in self.TraitsImplementing<INotifySupportPower>())
 				notify.Charged(self);
@@ -228,7 +235,8 @@ namespace OpenRA.Mods.Common.Traits
 			var speech = isAllied ? Info.LaunchSpeechNotification : Info.IncomingSpeechNotification;
 			Game.Sound.PlayNotification(Self.World.Map.Rules, localPlayer, "Speech", speech, localPlayer.Faction.InternalName);
 
-			TextNotificationsManager.AddTransientLine(isAllied ? Info.LaunchTextNotification : Info.IncomingTextNotification, localPlayer);
+			var text = isAllied ? Info.LaunchTextNotification : Info.IncomingTextNotification;
+			TextNotificationsManager.AddTransientLine(localPlayer, text);
 		}
 
 		public IEnumerable<CPos> CellsMatching(CPos location, char[] footprint, CVec dimensions)

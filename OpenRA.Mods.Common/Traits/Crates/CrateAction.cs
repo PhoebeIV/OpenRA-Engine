@@ -39,6 +39,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Speech notification to play when the crate is collected.")]
 		public readonly string Notification = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification to display when the crate is collected.")]
 		public readonly string TextNotification = null;
 
@@ -95,7 +96,7 @@ namespace OpenRA.Mods.Common.Traits
 				Game.Sound.PlayNotification(self.World.Map.Rules, collector.Owner, "Speech",
 					Info.Notification, collector.Owner.Faction.InternalName);
 
-			TextNotificationsManager.AddTransientLine(Info.TextNotification, collector.Owner);
+			TextNotificationsManager.AddTransientLine(collector.Owner, Info.TextNotification);
 
 			if (Info.Image != null && Info.Sequence != null)
 				collector.World.AddFrameEndTask(w => w.Add(new SpriteEffect(collector, w, Info.Image, Info.Sequence, Info.Palette)));

@@ -20,6 +20,7 @@ namespace OpenRA.Mods.Common.Traits.Sound
 		public readonly string Notification = "UnitLost";
 
 		[Desc("Text notification to display.")]
+		[TranslationReference(optional: true)]
 		public readonly string TextNotification = null;
 
 		public readonly bool NotifyAll = false;
@@ -45,7 +46,7 @@ namespace OpenRA.Mods.Common.Traits.Sound
 			var player = Info.NotifyAll ? localPlayer : self.Owner;
 
 			Game.Sound.PlayNotification(self.World.Map.Rules, player, "Speech", Info.Notification, self.Owner.Faction.InternalName);
-			TextNotificationsManager.AddTransientLine(Info.TextNotification, player);
+			TextNotificationsManager.AddTransientLine(player, Info.TextNotification);
 		}
 	}
 }

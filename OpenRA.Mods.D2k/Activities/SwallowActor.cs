@@ -51,7 +51,7 @@ namespace OpenRA.Mods.D2k.Activities
 			swallow = self.Trait<AttackSwallow>();
 		}
 
-		bool AttackTargets(Actor self, IEnumerable<Actor> targets)
+		bool AttackTargets(Actor self, IReadOnlyCollection<Actor> targets)
 		{
 			var targetLocation = target.Actor.Location;
 			foreach (var t in targets)
@@ -83,7 +83,7 @@ namespace OpenRA.Mods.D2k.Activities
 				self.World.AddFrameEndTask(w => w.Add(new MapNotificationEffect(player, "Speech", swallow.Info.WormAttackNotification, 25, true, attackPosition, Color.Red)));
 
 			if (affectedPlayers.Contains(self.World.LocalPlayer))
-				TextNotificationsManager.AddTransientLine(swallow.Info.WormAttackTextNotification, self.World.LocalPlayer);
+				TextNotificationsManager.AddTransientLine(self.World.LocalPlayer, swallow.Info.WormAttackTextNotification);
 
 			var barrel = armament.CheckFire(self, facing, target);
 			if (barrel == null)
@@ -129,9 +129,10 @@ namespace OpenRA.Mods.D2k.Activities
 					}
 
 					var targets = self.World.ActorMap.GetActorsAt(targetLocation)
-						.Where(t => !t.Equals(self) && weapon.IsValidAgainst(t, self));
+						.Where(t => !t.Equals(self) && weapon.IsValidAgainst(t, self))
+						.ToList();
 
-					if (!targets.Any())
+					if (targets.Count == 0)
 					{
 						RevokeCondition(self);
 						return true;

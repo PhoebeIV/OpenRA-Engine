@@ -32,6 +32,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Speech notification to play when dropping the unit.")]
 		public readonly string ReadyAudio = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification to display when dropping the unit.")]
 		public readonly string ReadyTextNotification = null;
 
@@ -100,7 +101,7 @@ namespace OpenRA.Mods.Common.Traits
 					self.World.AddFrameEndTask(ww => DoProduction(self, producee, exit?.Info, productionType, inits));
 					Game.Sound.Play(SoundType.World, info.ChuteSound, self.CenterPosition);
 					Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech", info.ReadyAudio, self.Owner.Faction.InternalName);
-					TextNotificationsManager.AddTransientLine(info.ReadyTextNotification, self.Owner);
+					TextNotificationsManager.AddTransientLine(self.Owner, info.ReadyTextNotification);
 				}));
 
 				actor.QueueActivity(new Fly(actor, Target.FromCell(w, endPos)));

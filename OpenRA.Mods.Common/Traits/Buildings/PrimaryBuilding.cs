@@ -37,6 +37,7 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Speech notification to play when selecting a primary building.")]
 		public readonly string SelectionNotification = null;
 
+		[TranslationReference(optional: true)]
 		[Desc("Text notification to display when selecting a primary building.")]
 		public readonly string SelectionTextNotification = null;
 
@@ -116,7 +117,7 @@ namespace OpenRA.Mods.Common.Traits
 					primaryToken = self.GrantCondition(Info.PrimaryCondition);
 
 				Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech", Info.SelectionNotification, self.Owner.Faction.InternalName);
-				TextNotificationsManager.AddTransientLine(Info.SelectionTextNotification, self.Owner);
+				TextNotificationsManager.AddTransientLine(self.Owner, Info.SelectionTextNotification);
 			}
 			else if (primaryToken != Actor.InvalidConditionToken)
 				primaryToken = self.RevokeCondition(primaryToken);
