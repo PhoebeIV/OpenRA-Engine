@@ -10,12 +10,12 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
 {
+	[TraitLocation(SystemActors.Player)]
 	[Desc("Manages AI MCVs.")]
 	public class McvManagerBotModuleInfo : ConditionalTraitInfo
 	{
@@ -212,12 +212,12 @@ namespace OpenRA.Mods.Common.Traits
 			};
 		}
 
-		void IGameSaveTraitData.ResolveTraitData(Actor self, ImmutableArray<MiniYamlNode> data)
+		void IGameSaveTraitData.ResolveTraitData(Actor self, MiniYaml data)
 		{
 			if (self.World.IsReplay)
 				return;
 
-			var initialBaseCenterNode = data.FirstOrDefault(n => n.Key == "InitialBaseCenter");
+			var initialBaseCenterNode = data.NodeWithKeyOrDefault("InitialBaseCenter");
 			if (initialBaseCenterNode != null)
 				initialBaseCenter = FieldLoader.GetValue<CPos>("InitialBaseCenter", initialBaseCenterNode.Value.Value);
 		}

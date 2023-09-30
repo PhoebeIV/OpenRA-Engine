@@ -35,7 +35,7 @@ namespace OpenRA.Mods.Common.Activities
 
 		protected override void OnFirstRun(Actor self)
 		{
-			targetStartPos = target.Positions.PositionClosestTo(self.CenterPosition);
+			targetStartPos = target.Positions.ClosestToIgnoringPath(self.CenterPosition);
 		}
 
 		public override bool Tick(Actor self)
@@ -47,7 +47,7 @@ namespace OpenRA.Mods.Common.Activities
 				return false;
 
 			var currentPos = self.CenterPosition;
-			var targetPos = target.Positions.PositionClosestTo(currentPos);
+			var targetPos = target.Positions.ClosestToIgnoringPath(currentPos);
 
 			// Give up if the target has moved too far
 			if (targetMovementThreshold > WDist.Zero && (targetPos - targetStartPos).LengthSquared > targetMovementThreshold.LengthSquared)

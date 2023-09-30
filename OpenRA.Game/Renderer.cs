@@ -27,7 +27,7 @@ namespace OpenRA
 		public SpriteRenderer WorldSpriteRenderer { get; }
 		public RgbaSpriteRenderer WorldRgbaSpriteRenderer { get; }
 		public RgbaColorRenderer WorldRgbaColorRenderer { get; }
-		public ModelRenderer WorldModelRenderer { get; }
+		public IRenderer[] WorldRenderers = Array.Empty<IRenderer>();
 		public RgbaColorRenderer RgbaColorRenderer { get; }
 		public SpriteRenderer SpriteRenderer { get; }
 		public RgbaSpriteRenderer RgbaSpriteRenderer { get; }
@@ -41,9 +41,11 @@ namespace OpenRA
 		internal IGraphicsContext Context { get; }
 
 		internal int SheetSize { get; }
-		internal int TempBufferSize { get; }
+		internal int TempVertexBufferSize { get; }
+		internal int TempIndexBufferSize { get; }
 
-		readonly IVertexBuffer<Vertex> tempBuffer;
+		readonly IVertexBuffer<Vertex> tempVertexBuffer;
+		readonly IIndexBuffer quadIndexBuffer;
 		readonly Stack<Rectangle> scissorState = new();
 
 		IFrameBuffer screenBuffer;
@@ -75,24 +77,27 @@ namespace OpenRA
 			this.platform = platform;
 			var resolution = GetResolution(graphicSettings);
 
+			TempVertexBufferSize = graphicSettings.BatchSize - graphicSettings.BatchSize % 4;
+			TempIndexBufferSize = TempVertexBufferSize / 4 * 6;
+
 			Window = platform.CreateWindow(new Size(resolution.Width, resolution.Height),
-				graphicSettings.Mode, graphicSettings.UIScale, graphicSettings.BatchSize,
+				graphicSettings.Mode, graphicSettings.UIScale, TempVertexBufferSize, TempIndexBufferSize,
 				graphicSettings.VideoDisplay, graphicSettings.GLProfile, !graphicSettings.DisableLegacyGL);
 
 			Context = Window.Context;
 
-			TempBufferSize = graphicSettings.BatchSize;
 			SheetSize = graphicSettings.SheetSize;
 
-			WorldSpriteRenderer = new SpriteRenderer(this, Context.CreateShader("combined"));
+			var combinedBindings = new CombinedShaderBindings();
+			WorldSpriteRenderer = new SpriteRenderer(this, Context.CreateShader(combinedBindings));
 			WorldRgbaSpriteRenderer = new RgbaSpriteRenderer(WorldSpriteRenderer);
 			WorldRgbaColorRenderer = new RgbaColorRenderer(WorldSpriteRenderer);
-			WorldModelRenderer = new ModelRenderer(this, Context.CreateShader("model"));
-			SpriteRenderer = new SpriteRenderer(this, Context.CreateShader("combined"));
+			SpriteRenderer = new SpriteRenderer(this, Context.CreateShader(combinedBindings));
 			RgbaSpriteRenderer = new RgbaSpriteRenderer(SpriteRenderer);
 			RgbaColorRenderer = new RgbaColorRenderer(SpriteRenderer);
 
-			tempBuffer = Context.CreateVertexBuffer(TempBufferSize);
+			tempVertexBuffer = Context.CreateVertexBuffer<Vertex>(TempVertexBufferSize);
+			quadIndexBuffer = Context.CreateIndexBuffer(Util.CreateQuadIndices(TempIndexBufferSize / 6));
 		}
 
 		static Size GetResolution(GraphicSettings graphicsSettings)
@@ -253,8 +258,6 @@ namespace OpenRA
 			if (lastWorldViewport != worldViewport)
 			{
 				WorldSpriteRenderer.SetViewportParams(worldSheet.Size, WorldDownscaleFactor, depthMargin, worldViewport.Location);
-				WorldModelRenderer.SetViewportParams();
-
 				lastWorldViewport = worldViewport;
 			}
 
@@ -302,7 +305,9 @@ namespace OpenRA
 
 			SpriteRenderer.SetPalette(currentPaletteTexture, palette.ColorShifts);
 			WorldSpriteRenderer.SetPalette(currentPaletteTexture, palette.ColorShifts);
-			WorldModelRenderer.SetPalette(currentPaletteTexture);
+
+			foreach (var r in WorldRenderers)
+				r.SetPalette(currentPaletteTexture);
 		}
 
 		public void EndFrame(IInputHandler inputHandler)
@@ -326,24 +331,29 @@ namespace OpenRA
 			renderType = RenderType.None;
 		}
 
-		public void DrawBatch(Vertex[] vertices, int numVertices, PrimitiveType type)
-		{
-			tempBuffer.SetData(vertices, numVertices);
-			DrawBatch(tempBuffer, 0, numVertices, type);
-		}
-
-		public void DrawBatch(ref Vertex[] vertices, int numVertices, PrimitiveType type)
-		{
-			tempBuffer.SetData(ref vertices, numVertices);
-			DrawBatch(tempBuffer, 0, numVertices, type);
-		}
-
-		public void DrawBatch<T>(IVertexBuffer<T> vertices,
+		public void DrawBatch<T>(IVertexBuffer<T> vertices, IShader shader,
 			int firstVertex, int numVertices, PrimitiveType type)
 			where T : struct
 		{
 			vertices.Bind();
+			shader.Bind();
 			Context.DrawPrimitives(type, firstVertex, numVertices);
+			PerfHistory.Increment("batches", 1);
+		}
+
+		public void DrawQuadBatch(ref Vertex[] vertices, IShader shader, int numVertices)
+		{
+			tempVertexBuffer.SetData(ref vertices, numVertices);
+			DrawQuadBatch(tempVertexBuffer, quadIndexBuffer, shader, numVertices / 4 * 6, 0);
+		}
+
+		public void DrawQuadBatch<T>(IVertexBuffer<T> vertices, IIndexBuffer indices, IShader shader, int numIndices, int start)
+			where T : struct
+		{
+			vertices.Bind();
+			indices.Bind();
+			shader.Bind();
+			Context.DrawElements(numIndices, start);
 			PerfHistory.Increment("batches", 1);
 		}
 
@@ -374,9 +384,19 @@ namespace OpenRA
 			}
 		}
 
-		public IVertexBuffer<Vertex> CreateVertexBuffer(int length)
+		public IFrameBuffer CreateFrameBuffer(Size s)
 		{
-			return Context.CreateVertexBuffer(length);
+			return Context.CreateFrameBuffer(s);
+		}
+
+		public IShader CreateShader(IShaderBindings bindings)
+		{
+			return Context.CreateShader(bindings);
+		}
+
+		public IVertexBuffer<T> CreateVertexBuffer<T>(int length) where T : struct
+		{
+			return Context.CreateVertexBuffer<T>(length);
 		}
 
 		public void EnableScissor(Rectangle rect)
@@ -503,8 +523,8 @@ namespace OpenRA
 
 		public void Dispose()
 		{
-			WorldModelRenderer.Dispose();
-			tempBuffer.Dispose();
+			tempVertexBuffer.Dispose();
+			quadIndexBuffer.Dispose();
 			fontSheetBuilder?.Dispose();
 			if (Fonts != null)
 				foreach (var font in Fonts.Values)

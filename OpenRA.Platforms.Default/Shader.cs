@@ -18,23 +18,16 @@ namespace OpenRA.Platforms.Default
 {
 	sealed class Shader : ThreadAffine, IShader
 	{
-		public const int VertexPosAttributeIndex = 0;
-		public const int TexCoordAttributeIndex = 1;
-		public const int TexMetadataAttributeIndex = 2;
-		public const int TintAttributeIndex = 3;
-
 		readonly Dictionary<string, int> samplers = new();
 		readonly Dictionary<int, int> legacySizeUniforms = new();
+		readonly Dictionary<string, int> uniformCache = new();
 		readonly Dictionary<int, ITexture> textures = new();
 		readonly Queue<int> unbindTextures = new();
+		readonly IShaderBindings bindings;
 		readonly uint program;
 
-		static uint CompileShaderObject(int type, string name)
+		static uint CompileShaderObject(int type, string code, string name)
 		{
-			var ext = type == OpenGL.GL_VERTEX_SHADER ? "vert" : "frag";
-			var filename = Path.Combine(Platform.EngineDir, "glsl", name + "." + ext);
-			var code = File.ReadAllText(filename);
-
 			var version = OpenGL.Profile == GLProfile.Embedded ? "300 es" :
 				OpenGL.Profile == GLProfile.Legacy ? "120" : "140";
 
@@ -60,29 +53,29 @@ namespace OpenRA.Platforms.Default
 				OpenGL.glGetShaderInfoLog(shader, len, out _, log);
 
 				Log.Write("graphics", $"GL Info Log:\n{log}");
-				throw new InvalidProgramException($"Compile error in shader object '{filename}'");
+				throw new InvalidProgramException($"Compile error in shader object {name}.");
 			}
 
 			return shader;
 		}
 
-		public Shader(string name)
+		public Shader(IShaderBindings bindings)
 		{
-			var vertexShader = CompileShaderObject(OpenGL.GL_VERTEX_SHADER, name);
-			var fragmentShader = CompileShaderObject(OpenGL.GL_FRAGMENT_SHADER, name);
+			var vertexShader = CompileShaderObject(OpenGL.GL_VERTEX_SHADER, bindings.VertexShaderCode, bindings.VertexShaderName);
+			var fragmentShader = CompileShaderObject(OpenGL.GL_FRAGMENT_SHADER, bindings.FragmentShaderCode, bindings.FragmentShaderName);
 
 			// Assemble program
 			program = OpenGL.glCreateProgram();
 			OpenGL.CheckGLError();
 
-			OpenGL.glBindAttribLocation(program, VertexPosAttributeIndex, "aVertexPosition");
-			OpenGL.CheckGLError();
-			OpenGL.glBindAttribLocation(program, TexCoordAttributeIndex, "aVertexTexCoord");
-			OpenGL.CheckGLError();
-			OpenGL.glBindAttribLocation(program, TexMetadataAttributeIndex, "aVertexTexMetadata");
-			OpenGL.CheckGLError();
-			OpenGL.glBindAttribLocation(program, TintAttributeIndex, "aVertexTint");
-			OpenGL.CheckGLError();
+			this.bindings = bindings;
+			for (ushort i = 0; i < bindings.Attributes.Length; i++)
+			{
+				OpenGL.glEnableVertexAttribArray(i);
+				OpenGL.CheckGLError();
+				OpenGL.glBindAttribLocation(program, i, bindings.Attributes[i].Name);
+				OpenGL.CheckGLError();
+			}
 
 			if (OpenGL.Profile == GLProfile.Modern)
 			{
@@ -106,7 +99,7 @@ namespace OpenRA.Platforms.Default
 				var log = new StringBuilder(len);
 				OpenGL.glGetProgramInfoLog(program, len, out _, log);
 				Log.Write("graphics", $"GL Info Log:\n{log}");
-				throw new InvalidProgramException($"Link error in shader program '{name}'");
+				throw new InvalidProgramException($"Link error in shader program '{bindings.VertexShaderName}' and '{bindings.FragmentShaderName}'");
 			}
 
 			OpenGL.glUseProgram(program);
@@ -121,15 +114,17 @@ namespace OpenRA.Platforms.Default
 			{
 				var sb = new StringBuilder(128);
 				OpenGL.glGetActiveUniform(program, i, 128, out _, out _, out var type, sb);
-				var sampler = sb.ToString();
 				OpenGL.CheckGLError();
+
+				var sampler = sb.ToString();
+				var loc = OpenGL.glGetUniformLocation(program, sampler);
+				OpenGL.CheckGLError();
+				uniformCache[sampler] = loc;
 
 				if (type == OpenGL.GL_SAMPLER_2D)
 				{
 					samplers.Add(sampler, nextTexUnit);
 
-					var loc = OpenGL.glGetUniformLocation(program, sampler);
-					OpenGL.CheckGLError();
 					OpenGL.glUniform1i(loc, nextTexUnit);
 					OpenGL.CheckGLError();
 
@@ -142,6 +137,16 @@ namespace OpenRA.Platforms.Default
 
 					nextTexUnit++;
 				}
+			}
+		}
+
+		public void Bind()
+		{
+			for (ushort i = 0; i < bindings.Attributes.Length; i++)
+			{
+				var attribute = bindings.Attributes[i];
+				OpenGL.glVertexAttribPointer(i, attribute.Components, OpenGL.GL_FLOAT, false, bindings.Stride, new IntPtr(attribute.Offset));
+				OpenGL.CheckGLError();
 			}
 		}
 
@@ -194,9 +199,7 @@ namespace OpenRA.Platforms.Default
 			VerifyThreadAffinity();
 			OpenGL.glUseProgram(program);
 			OpenGL.CheckGLError();
-			var param = OpenGL.glGetUniformLocation(program, name);
-			OpenGL.CheckGLError();
-			OpenGL.glUniform1i(param, value ? 1 : 0);
+			OpenGL.glUniform1i(uniformCache[name], value ? 1 : 0);
 			OpenGL.CheckGLError();
 		}
 
@@ -205,9 +208,7 @@ namespace OpenRA.Platforms.Default
 			VerifyThreadAffinity();
 			OpenGL.glUseProgram(program);
 			OpenGL.CheckGLError();
-			var param = OpenGL.glGetUniformLocation(program, name);
-			OpenGL.CheckGLError();
-			OpenGL.glUniform1f(param, x);
+			OpenGL.glUniform1f(uniformCache[name], x);
 			OpenGL.CheckGLError();
 		}
 
@@ -216,9 +217,7 @@ namespace OpenRA.Platforms.Default
 			VerifyThreadAffinity();
 			OpenGL.glUseProgram(program);
 			OpenGL.CheckGLError();
-			var param = OpenGL.glGetUniformLocation(program, name);
-			OpenGL.CheckGLError();
-			OpenGL.glUniform2f(param, x, y);
+			OpenGL.glUniform2f(uniformCache[name], x, y);
 			OpenGL.CheckGLError();
 		}
 
@@ -227,17 +226,14 @@ namespace OpenRA.Platforms.Default
 			VerifyThreadAffinity();
 			OpenGL.glUseProgram(program);
 			OpenGL.CheckGLError();
-			var param = OpenGL.glGetUniformLocation(program, name);
-			OpenGL.CheckGLError();
-			OpenGL.glUniform3f(param, x, y, z);
+			OpenGL.glUniform3f(uniformCache[name], x, y, z);
 			OpenGL.CheckGLError();
 		}
 
 		public void SetVec(string name, float[] vec, int length)
 		{
 			VerifyThreadAffinity();
-			var param = OpenGL.glGetUniformLocation(program, name);
-			OpenGL.CheckGLError();
+			var param = uniformCache[name];
 			unsafe
 			{
 				fixed (float* pVec = vec)
@@ -265,13 +261,11 @@ namespace OpenRA.Platforms.Default
 
 			OpenGL.glUseProgram(program);
 			OpenGL.CheckGLError();
-			var param = OpenGL.glGetUniformLocation(program, name);
-			OpenGL.CheckGLError();
 
 			unsafe
 			{
 				fixed (float* pMtx = mtx)
-					OpenGL.glUniformMatrix4fv(param, 1, false, new IntPtr(pMtx));
+					OpenGL.glUniformMatrix4fv(uniformCache[name], 1, false, new IntPtr(pMtx));
 			}
 
 			OpenGL.CheckGLError();

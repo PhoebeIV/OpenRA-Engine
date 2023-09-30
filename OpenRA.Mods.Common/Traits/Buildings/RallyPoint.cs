@@ -128,6 +128,9 @@ namespace OpenRA.Mods.Common.Traits
 			if (order.OrderString != OrderID)
 				return;
 
+			if (!order.Target.IsValidFor(self))
+				return;
+
 			if (!order.Queued)
 				Path.Clear();
 
@@ -180,10 +183,8 @@ namespace OpenRA.Mods.Common.Traits
 					if (modifiers.HasModifier(TargetModifiers.ForceAttack) && !string.IsNullOrEmpty(info.ForceSetType))
 					{
 						var closest = self.World.Selection.Actors
-							.Select<Actor, (Actor Actor, RallyPoint RallyPoint)>(a => (a, a.TraitOrDefault<RallyPoint>()))
-							.Where(x => x.RallyPoint != null && x.RallyPoint.Info.ForceSetType == info.ForceSetType)
-							.OrderBy(x => (location - x.Actor.Location).LengthSquared)
-							.FirstOrDefault().Actor;
+							.Where(a => a.TraitOrDefault<RallyPoint>()?.Info.ForceSetType == info.ForceSetType)
+							.ClosestToWithPathTo(self.World, target.CenterPosition);
 
 						ForceSet = closest == self;
 					}

@@ -11,18 +11,15 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 {
 	abstract class AirStateBase : StateBase
 	{
-		static readonly BitSet<TargetableType> AirTargetTypes = new("Air");
-
 		protected const int MissileUnitMultiplier = 3;
 
-		protected static int CountAntiAirUnits(IReadOnlyCollection<Actor> units)
+		protected static int CountAntiAirUnits(Squad owner, IReadOnlyCollection<Actor> units)
 		{
 			if (units.Count == 0)
 				return 0;
@@ -40,7 +37,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 
 					foreach (var a in ab.Armaments)
 					{
-						if (a.Weapon.IsValidTarget(AirTargetTypes))
+						if (a.Weapon.IsValidTarget(owner.SquadManager.Info.AircraftTargetType))
 						{
 							missileUnitsCount++;
 							break;
@@ -99,7 +96,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (unitsAroundPos.Count == 0)
 				return true;
 
-			if (CountAntiAirUnits(unitsAroundPos) * MissileUnitMultiplier < owner.Units.Count)
+			if (CountAntiAirUnits(owner, unitsAroundPos) * MissileUnitMultiplier < owner.Units.Count)
 			{
 				detectedEnemyTarget = unitsAroundPos.Random(owner.Random);
 				return true;
@@ -111,7 +108,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 		// Checks the number of anti air enemies around units
 		protected virtual bool ShouldFlee(Squad owner)
 		{
-			return ShouldFlee(owner, enemies => CountAntiAirUnits(enemies) * MissileUnitMultiplier > owner.Units.Count);
+			return ShouldFlee(owner, enemies => CountAntiAirUnits(owner, enemies) * MissileUnitMultiplier > owner.Units.Count);
 		}
 	}
 
@@ -134,7 +131,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (e == null)
 				return;
 
-			owner.TargetActor = e;
+			owner.SetActorToTarget((e, WVec.Zero));
 			owner.FuzzyStateMachine.ChangeState(owner, new AirAttackState(), true);
 		}
 
@@ -150,20 +147,19 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (!owner.IsValid)
 				return;
 
-			if (!owner.IsTargetValid)
+			var leader = owner.CenterUnit();
+			if (!owner.IsTargetValid(leader))
 			{
-				var a = owner.Units.Random(owner.Random);
-				var closestEnemy = owner.SquadManager.FindClosestEnemy(a.CenterPosition);
-				if (closestEnemy != null)
-					owner.TargetActor = closestEnemy;
-				else
+				var closestEnemy = owner.SquadManager.FindClosestEnemy(leader);
+				owner.SetActorToTarget(closestEnemy);
+				if (closestEnemy.Actor == null)
 				{
 					owner.FuzzyStateMachine.ChangeState(owner, new AirFleeState(), true);
 					return;
 				}
 			}
 
-			if (!NearToPosSafely(owner, owner.TargetActor.CenterPosition))
+			if (!NearToPosSafely(owner, owner.Target.CenterPosition))
 			{
 				owner.FuzzyStateMachine.ChangeState(owner, new AirFleeState(), true);
 				return;
@@ -188,7 +184,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 				}
 
 				if (CanAttackTarget(a, owner.TargetActor))
-					owner.Bot.QueueOrder(new Order("Attack", a, Target.FromActor(owner.TargetActor), false));
+					owner.Bot.QueueOrder(new Order("Attack", a, owner.Target, false));
 			}
 		}
 

@@ -113,7 +113,7 @@ namespace OpenRA.Mods.Common.Traits
 			else
 			{
 				// Don't put the player into negative funds
-				amount = Math.Max(-(Cash + Resources), amount);
+				amount = Math.Max(-GetCashAndResources(), amount);
 
 				TakeCash(-amount);
 			}
@@ -182,7 +182,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public bool TakeCash(int num, bool notifyLowFunds = false)
 		{
-			if (Cash + Resources < num)
+			if (GetCashAndResources() < num)
 			{
 				if (notifyLowFunds && Game.RunTime > lastNotificationTime + Info.InsufficientFundsNotificationInterval)
 				{
@@ -206,17 +206,22 @@ namespace OpenRA.Mods.Common.Traits
 			return true;
 		}
 
-		public void AddStorage(int capacity)
+		public void AddStorageCapacity(int capacity)
 		{
 			ResourceCapacity += capacity;
 		}
 
-		public void RemoveStorage(int capacity)
+		public void RemoveStorageCapacity(int capacity)
 		{
 			ResourceCapacity -= capacity;
 
 			if (Resources > ResourceCapacity)
 				Resources = ResourceCapacity;
+		}
+
+		public int GetCashAndResources()
+		{
+			return Cash + Resources;
 		}
 	}
 }

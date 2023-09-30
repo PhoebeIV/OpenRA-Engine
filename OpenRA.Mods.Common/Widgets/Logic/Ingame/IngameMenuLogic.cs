@@ -117,6 +117,27 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		[TranslationReference]
 		const string ExitMapEditorConfirm = "dialog-exit-map-editor.confirm";
 
+		[TranslationReference]
+		const string PlayMapWarningTitle = "dialog-play-map-warning.title";
+
+		[TranslationReference]
+		const string PlayMapWarningPrompt = "dialog-play-map-warning.prompt";
+
+		[TranslationReference]
+		const string PlayMapWarningCancel = "dialog-play-map-warning.cancel";
+
+		[TranslationReference]
+		const string ExitToMapEditorTitle = "dialog-exit-to-map-editor.title";
+
+		[TranslationReference]
+		const string ExitToMapEditorPrompt = "dialog-exit-to-map-editor.prompt";
+
+		[TranslationReference]
+		const string ExitToMapEditorConfirm = "dialog-exit-to-map-editor.confirm";
+
+		[TranslationReference]
+		const string ExitToMapEditorCancel = "dialog-exit-to-map-editor.cancel";
+
 		readonly Widget menu;
 		readonly Widget buttonContainer;
 		readonly ButtonWidget buttonTemplate;
@@ -133,6 +154,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		bool leaving;
 		bool hideMenu;
 
+		static bool lastGameEditor = false;
+
 		[ObjectCreator.UseCtor]
 		public IngameMenuLogic(Widget widget, ModData modData, World world, Action onExit, WorldRenderer worldRenderer,
 			IngameInfoPanel initialPanel, Dictionary<string, MiniYaml> logicArgs)
@@ -145,6 +168,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			var buttonHandlers = new Dictionary<string, Action>
 			{
 				{ "ABORT_MISSION", CreateAbortMissionButton },
+				{ "BACK_TO_EDITOR", CreateBackToEditorButton },
 				{ "RESTART", CreateRestartButton },
 				{ "SURRENDER", CreateSurrenderButton },
 				{ "LOAD_GAME", CreateLoadGameButton },
@@ -153,6 +177,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				{ "SETTINGS", CreateSettingsButton },
 				{ "RESUME", CreateResumeButton },
 				{ "SAVE_MAP", CreateSaveMapButton },
+				{ "PLAY_MAP", CreatePlayMapButton },
 				{ "EXIT_EDITOR", CreateExitEditorButton }
 			};
 
@@ -200,7 +225,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				var gameInfoPanel = Game.LoadWidget(world, "GAME_INFO_PANEL", panelRoot, new WidgetArgs()
 				{
 					{ "initialPanel", initialPanel },
-					{ "hideMenu", requestHideMenu }
+					{ "hideMenu", requestHideMenu },
+					{ "closeMenu", CloseMenu },
 				});
 
 				gameInfoPanel.IsVisible = () => !hideMenu;
@@ -234,6 +260,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				exitDelay += 40 * mpe.Info.FadeLength;
 			}
 
+			lastGameEditor = false;
 			Game.RunAfterDelay(exitDelay, () =>
 			{
 				if (!Game.IsCurrentWorld(world))
@@ -478,35 +505,127 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			};
 		}
 
+		void CreatePlayMapButton()
+		{
+			if (world.Type != WorldType.Editor)
+				return;
+
+			var actionManager = world.WorldActor.Trait<EditorActionManager>();
+			AddButton("PLAY_MAP", "Play Map")
+				.OnClick = () =>
+				{
+					hideMenu = true;
+					var uid = modData.MapCache.GetUpdatedMap(world.Map.Uid);
+					var map = uid == null ? null : modData.MapCache[uid];
+					if (map == null || (map.Visibility != MapVisibility.Lobby && map.Visibility != MapVisibility.MissionSelector))
+					{
+						ConfirmationDialogs.ButtonPrompt(modData,
+							title: PlayMapWarningTitle,
+							text: PlayMapWarningPrompt,
+							onCancel: ShowMenu,
+							cancelText: PlayMapWarningCancel);
+
+						return;
+					}
+
+					ExitEditor(actionManager, () =>
+					{
+						lastGameEditor = true;
+
+						Ui.CloseWindow();
+						Ui.ResetTooltips();
+						void CloseMenu()
+						{
+							mpe?.Fade(MenuPaletteEffect.EffectType.None);
+							onExit();
+						}
+
+						if (map.Visibility == MapVisibility.Lobby)
+						{
+							ConnectionLogic.Connect(Game.CreateLocalServer(uid),
+								"",
+								() => Game.OpenWindow("SERVER_LOBBY", new WidgetArgs
+								{
+									{ "onExit", CloseMenu },
+									{ "onStart", () => { } },
+									{ "skirmishMode", true }
+								}),
+								() => Game.CloseServer());
+						}
+						else if (map.Visibility == MapVisibility.MissionSelector)
+						{
+							Game.OpenWindow("MISSIONBROWSER_PANEL", new WidgetArgs
+							{
+								{ "onExit", CloseMenu },
+								{ "onStart", () => { } },
+								{ "initialMap", uid }
+							});
+						}
+					});
+				};
+		}
+
+		void CreateBackToEditorButton()
+		{
+			if (world.Type != WorldType.Regular || !lastGameEditor)
+				return;
+
+			AddButton("BACK_TO_EDITOR", "Back To Editor")
+				.OnClick = () =>
+				{
+					hideMenu = true;
+					void OnConfirm()
+					{
+						lastGameEditor = false;
+						var map = modData.MapCache.GetUpdatedMap(world.Map.Uid);
+						if (map == null)
+							Game.LoadShellMap();
+						else
+						{
+							DiscordService.UpdateStatus(DiscordState.InMapEditor);
+							Game.LoadEditor(map);
+						}
+					}
+
+					ConfirmationDialogs.ButtonPrompt(modData,
+						title: ExitToMapEditorTitle,
+						text: ExitToMapEditorPrompt,
+						onConfirm: OnConfirm,
+						onCancel: ShowMenu,
+						confirmText: ExitToMapEditorConfirm,
+						cancelText: ExitToMapEditorCancel);
+				};
+		}
+
 		void CreateExitEditorButton()
 		{
 			if (world.Type != WorldType.Editor)
 				return;
 
 			var actionManager = world.WorldActor.Trait<EditorActionManager>();
-			var button = AddButton("EXIT_EDITOR", ExitMapButton);
+			AddButton("EXIT_EDITOR", ExitMapButton)
+				.OnClick = () => ExitEditor(actionManager, () => OnQuit(world));
+		}
 
-			// Show dialog only if updated since last save
-			button.OnClick = () =>
+		void ExitEditor(EditorActionManager actionManager, Action onSuccess)
+		{
+			var map = modData.MapCache.GetUpdatedMap(world.Map.Uid);
+			var deletedOrUnavailable = map == null || modData.MapCache[map].Status != MapStatus.Available;
+			if (actionManager.HasUnsavedItems() || deletedOrUnavailable)
 			{
-				var map = modData.MapCache.GetUpdatedMap(world.Map.Uid);
-				var deletedOrUnavailable = map == null || modData.MapCache[map].Status != MapStatus.Available;
-				if (actionManager.HasUnsavedItems() || deletedOrUnavailable)
-				{
-					hideMenu = true;
-					ConfirmationDialogs.ButtonPrompt(modData,
-						title: ExitMapEditorTitle,
-						text: deletedOrUnavailable ? ExitMapEditorPromptDeleted : ExitMapEditorPromptUnsaved,
-						confirmText: deletedOrUnavailable ? ExitMapEditorAnywayConfirm : ExitMapEditorConfirm,
-						onConfirm: () => { OnQuit(world); leaving = true; },
-						onCancel: ShowMenu);
-				}
-				else
-				{
-					OnQuit(world);
-					leaving = true;
-				}
-			};
+				hideMenu = true;
+				ConfirmationDialogs.ButtonPrompt(modData,
+					title: ExitMapEditorTitle,
+					text: deletedOrUnavailable ? ExitMapEditorPromptDeleted : ExitMapEditorPromptUnsaved,
+					confirmText: deletedOrUnavailable ? ExitMapEditorAnywayConfirm : ExitMapEditorConfirm,
+					onConfirm: () => { onSuccess(); leaving = true; },
+					onCancel: ShowMenu);
+			}
+			else
+			{
+				onSuccess();
+				leaving = true;
+			}
 		}
 	}
 }

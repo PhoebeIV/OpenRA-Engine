@@ -9,6 +9,7 @@
  */
 #endregion
 
+using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Traits;
 
@@ -16,14 +17,64 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 {
 	abstract class GroundStateBase : StateBase
 	{
+		Actor leader;
+
+		/// <summary>
+		/// Elects a unit to lead the squad, other units in the squad will regroup to the leader if they start to spread out.
+		/// The leader remains the same unless a new one is forced or the leader is no longer part of the squad.
+		/// </summary>
+		protected Actor Leader(Squad owner)
+		{
+			if (leader == null || !owner.Units.Contains(leader))
+				leader = NewLeader(owner);
+			return leader;
+		}
+
+		static Actor NewLeader(Squad owner)
+		{
+			IEnumerable<Actor> units = owner.Units;
+
+			// Identify the Locomotor with the most restrictive passable terrain list. For squads with mixed
+			// locomotors, we hope to choose the most restrictive option. This means we won't nominate a leader who has
+			// more options. This avoids situations where we would nominate a hovercraft as the leader and tanks would
+			// fail to follow it because they can't go over water. By forcing us to choose a unit with limited movement
+			// options, we maximise the chance other units will be able to follow it. We could still be screwed if the
+			// squad has a mix of units with disparate movement, e.g. land units and naval units. We must trust the
+			// squad has been formed from a set of units that don't suffer this problem.
+			var leastCommonDenominator = units
+				.Select(a => a.TraitOrDefault<Mobile>()?.Locomotor)
+				.Where(l => l != null)
+				.MinByOrDefault(l => l.Info.TerrainSpeeds.Count)
+				?.Info.TerrainSpeeds.Count;
+			if (leastCommonDenominator != null)
+				units = units.Where(a => a.TraitOrDefault<Mobile>()?.Locomotor.Info.TerrainSpeeds.Count == leastCommonDenominator).ToList();
+
+			// Choosing a unit in the center reduces the need for an immediate regroup.
+			var centerPosition = units.Select(a => a.CenterPosition).Average();
+			return units.MinBy(a => (a.CenterPosition - centerPosition).LengthSquared);
+		}
+
 		protected virtual bool ShouldFlee(Squad owner)
 		{
 			return ShouldFlee(owner, enemies => !AttackOrFleeFuzzy.Default.CanAttack(owner.Units, enemies));
 		}
 
-		protected static Actor FindClosestEnemy(Squad owner)
+		protected (Actor Actor, WVec Offset) NewLeaderAndFindClosestEnemy(Squad owner)
 		{
-			return owner.SquadManager.FindClosestEnemy(owner.Units.First().CenterPosition);
+			leader = null; // Force a new leader to be elected, useful if we are targeting a new enemy.
+			return owner.SquadManager.FindClosestEnemy(Leader(owner));
+		}
+
+		protected IEnumerable<(Actor Actor, WVec Offset)> FindEnemies(Squad owner, IEnumerable<Actor> actors)
+		{
+			return owner.SquadManager.FindEnemies(
+				actors,
+				Leader(owner));
+		}
+
+		protected static Actor ClosestToEnemy(Squad owner)
+		{
+			return SquadManagerBotModule.ClosestTo(owner.Units, owner.TargetActor);
 		}
 	}
 
@@ -36,24 +87,26 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (!owner.IsValid)
 				return;
 
-			if (!owner.IsTargetValid)
+			if (!owner.IsTargetValid(Leader(owner)))
 			{
-				var closestEnemy = FindClosestEnemy(owner);
-				if (closestEnemy == null)
+				var closestEnemy = NewLeaderAndFindClosestEnemy(owner);
+				owner.SetActorToTarget(closestEnemy);
+				if (closestEnemy.Actor == null)
 					return;
-
-				owner.TargetActor = closestEnemy;
 			}
 
-			var enemyUnits = owner.World.FindActorsInCircle(owner.TargetActor.CenterPosition, WDist.FromCells(owner.SquadManager.Info.IdleScanRadius))
-				.Where(owner.SquadManager.IsPreferredEnemyUnit).ToList();
+			var enemyUnits =
+				FindEnemies(owner,
+					owner.World.FindActorsInCircle(owner.Target.CenterPosition, WDist.FromCells(owner.SquadManager.Info.IdleScanRadius)))
+				.Select(x => x.Actor)
+				.ToList();
 
 			if (enemyUnits.Count == 0)
 				return;
 
 			if (AttackOrFleeFuzzy.Default.CanAttack(owner.Units, enemyUnits))
 			{
-				owner.Bot.QueueOrder(new Order("AttackMove", null, Target.FromCell(owner.World, owner.TargetActor.Location), false, groupedActors: owner.Units.ToArray()));
+				owner.Bot.QueueOrder(new Order("AttackMove", null, owner.Target, false, groupedActors: owner.Units.ToArray()));
 
 				// We have gathered sufficient units. Attack the nearest enemy unit.
 				owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsAttackMoveState(), true);
@@ -78,22 +131,18 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (!owner.IsValid)
 				return;
 
-			if (!owner.IsTargetValid)
+			if (!owner.IsTargetValid(Leader(owner)))
 			{
-				var closestEnemy = FindClosestEnemy(owner);
-				if (closestEnemy != null)
-					owner.TargetActor = closestEnemy;
-				else
+				var closestEnemy = NewLeaderAndFindClosestEnemy(owner);
+				owner.SetActorToTarget(closestEnemy);
+				if (closestEnemy.Actor == null)
 				{
 					owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsFleeState(), true);
 					return;
 				}
 			}
 
-			var leader = owner.Units.ClosestTo(owner.TargetActor.CenterPosition);
-			if (leader == null)
-				return;
-
+			var leader = Leader(owner);
 			if (leader.Location != lastLeaderLocation)
 			{
 				lastLeaderLocation = leader.Location;
@@ -116,7 +165,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			}
 
 			var ownUnits = owner.World.FindActorsInCircle(leader.CenterPosition, WDist.FromCells(owner.Units.Count) / 3)
-				.Where(a => a.Owner == owner.Units.First().Owner && owner.Units.Contains(a)).ToHashSet();
+				.Where(owner.Units.Contains).ToHashSet();
 
 			if (ownUnits.Count < owner.Units.Count)
 			{
@@ -129,16 +178,14 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			}
 			else
 			{
-				var enemies = owner.World.FindActorsInCircle(leader.CenterPosition, WDist.FromCells(owner.SquadManager.Info.AttackScanRadius))
-					.Where(owner.SquadManager.IsPreferredEnemyUnit);
-				var target = enemies.ClosestTo(leader.CenterPosition);
-				if (target != null)
+				var target = owner.SquadManager.FindClosestEnemy(leader, WDist.FromCells(owner.SquadManager.Info.AttackScanRadius));
+				if (target.Actor != null)
 				{
-					owner.TargetActor = target;
+					owner.SetActorToTarget(target);
 					owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsAttackState(), true);
 				}
 				else
-					owner.Bot.QueueOrder(new Order("AttackMove", null, Target.FromCell(owner.World, owner.TargetActor.Location), false, groupedActors: owner.Units.ToArray()));
+					owner.Bot.QueueOrder(new Order("AttackMove", null, owner.Target, false, groupedActors: owner.Units.ToArray()));
 			}
 
 			if (ShouldFlee(owner))
@@ -161,19 +208,18 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (!owner.IsValid)
 				return;
 
-			if (!owner.IsTargetValid)
+			if (!owner.IsTargetValid(Leader(owner)))
 			{
-				var closestEnemy = FindClosestEnemy(owner);
-				if (closestEnemy != null)
-					owner.TargetActor = closestEnemy;
-				else
+				var closestEnemy = NewLeaderAndFindClosestEnemy(owner);
+				owner.SetActorToTarget(closestEnemy);
+				if (closestEnemy.Actor == null)
 				{
 					owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsFleeState(), true);
 					return;
 				}
 			}
 
-			var leader = owner.Units.ClosestTo(owner.TargetActor.CenterPosition);
+			var leader = Leader(owner);
 			if (leader.Location != lastLeaderLocation)
 			{
 				lastLeaderLocation = leader.Location;
@@ -197,7 +243,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 
 			foreach (var a in owner.Units)
 				if (!BusyAttack(a))
-					owner.Bot.QueueOrder(new Order("Attack", a, Target.FromActor(owner.TargetActor), false));
+					owner.Bot.QueueOrder(new Order("AttackMove", a, owner.Target, false));
 
 			if (ShouldFlee(owner))
 				owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsFleeState(), true);
@@ -219,6 +265,6 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			owner.FuzzyStateMachine.ChangeState(owner, new GroundUnitsIdleState(), true);
 		}
 
-		public void Deactivate(Squad owner) { owner.Units.Clear(); }
+		public void Deactivate(Squad owner) { owner.SquadManager.UnregisterSquad(owner); }
 	}
 }

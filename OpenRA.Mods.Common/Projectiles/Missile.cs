@@ -270,7 +270,7 @@ namespace OpenRA.Mods.Common.Projectiles
 			var inaccuracy = lockOn && info.LockOnInaccuracy.Length > -1 ? info.LockOnInaccuracy.Length : info.Inaccuracy.Length;
 			if (inaccuracy > 0)
 			{
-				var maxInaccuracyOffset = Util.GetProjectileInaccuracy(info.Inaccuracy.Length, info.InaccuracyType, args);
+				var maxInaccuracyOffset = Util.GetProjectileInaccuracy(inaccuracy, info.InaccuracyType, args);
 				offset = WVec.FromPDF(world.SharedRandom, 2) * maxInaccuracyOffset / 1024;
 			}
 
@@ -852,7 +852,7 @@ namespace OpenRA.Mods.Common.Projectiles
 			// Check if target position should be updated (actor visible & locked on)
 			var newTarPos = targetPosition;
 			if (args.GuidedTarget.IsValidFor(args.SourceActor) && lockOn)
-				newTarPos = (args.Weapon.TargetActorCenter ? args.GuidedTarget.CenterPosition : args.GuidedTarget.Positions.PositionClosestTo(args.Source))
+				newTarPos = (args.Weapon.TargetActorCenter ? args.GuidedTarget.CenterPosition : args.GuidedTarget.Positions.ClosestToIgnoringPath(args.Source))
 					+ new WVec(WDist.Zero, WDist.Zero, info.AirburstAltitude);
 
 			// Compute target's predicted velocity vector (assuming uniform circular motion)

@@ -9,7 +9,7 @@
  */
 #endregion
 
-using OpenRA.Traits;
+using System.Linq;
 
 namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 {
@@ -32,11 +32,12 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (!owner.IsValid)
 				return;
 
-			if (!owner.IsTargetValid)
+			var leader = Leader(owner);
+			if (!owner.IsTargetValid(leader))
 			{
-				owner.TargetActor = owner.SquadManager.FindClosestEnemy(owner.CenterPosition, WDist.FromCells(owner.SquadManager.Info.ProtectionScanRadius));
-
-				if (owner.TargetActor == null)
+				var target = owner.SquadManager.FindClosestEnemy(leader, WDist.FromCells(owner.SquadManager.Info.ProtectionScanRadius));
+				owner.SetActorToTarget(target);
+				if (target.Actor == null)
 				{
 					owner.FuzzyStateMachine.ChangeState(owner, new UnitsForProtectionFleeState(), true);
 					return;
@@ -55,7 +56,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 				Backoff--;
 			}
 			else
-				owner.Bot.QueueOrder(new Order("AttackMove", null, Target.FromCell(owner.World, owner.TargetActor.Location), false, groupedActors: owner.Units.ToArray()));
+				owner.Bot.QueueOrder(new Order("AttackMove", null, owner.Target, false, groupedActors: owner.Units.ToArray()));
 		}
 
 		public void Deactivate(Squad owner) { }
@@ -74,6 +75,6 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			owner.FuzzyStateMachine.ChangeState(owner, new UnitsForProtectionIdleState(), true);
 		}
 
-		public void Deactivate(Squad owner) { owner.Units.Clear(); }
+		public void Deactivate(Squad owner) { owner.SquadManager.UnregisterSquad(owner); }
 	}
 }

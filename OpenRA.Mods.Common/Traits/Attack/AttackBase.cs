@@ -166,7 +166,7 @@ namespace OpenRA.Mods.Common.Traits
 				return;
 
 			foreach (var a in Armaments)
-				a.CheckFire(self, facing, target);
+				a.CheckFire(self, facing, target, false);
 		}
 
 		IEnumerable<IOrderTargeter> IIssueOrder.Orders
@@ -247,7 +247,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public virtual WPos GetTargetPosition(WPos pos, in Target target)
 		{
-			return HasAnyValidWeapons(target, true) ? target.CenterPosition : target.Positions.PositionClosestTo(pos);
+			return HasAnyValidWeapons(target, true) ? target.CenterPosition : target.Positions.ClosestToIgnoringPath(pos);
 		}
 
 		public WDist GetMinimumRange()

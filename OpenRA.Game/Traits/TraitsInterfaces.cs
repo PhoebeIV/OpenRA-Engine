@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -174,7 +173,31 @@ namespace OpenRA.Traits
 	}
 
 	[RequireExplicitImplementation]
-	public interface IStoreResources { int Capacity { get; } }
+	public interface IStoresResourcesInfo : ITraitInfoInterface
+	{
+		string[] ResourceTypes { get; }
+	}
+
+	public interface IStoresResources
+	{
+		bool HasType(string resourceType);
+
+		/// <summary>The amount of resources that can be stored.</summary>
+		int Capacity { get; }
+
+		/// <summary>Stored resources.</summary>
+		/// <remarks>Dictionary key refers to resourceType, value refers to resource amount.</remarks>
+		IReadOnlyDictionary<string, int> Contents { get; }
+
+		/// <summary>A performance cheap method of getting the total sum of contents.</summary>
+		int ContentsSum { get; }
+
+		/// <summary>Returns the amount of <paramref name="value"/> that was not added.</summary>
+		int AddResource(string resourceType, int value);
+
+		/// <summary>Returns the amount of <paramref name="value"/> that was not removed.</summary>
+		int RemoveResource(string resourceType, int value);
+	}
 
 	public interface IEffectiveOwner
 	{
@@ -350,7 +373,7 @@ namespace OpenRA.Traits
 	public interface IGameSaveTraitData
 	{
 		List<MiniYamlNode> IssueTraitData(Actor self);
-		void ResolveTraitData(Actor self, ImmutableArray<MiniYamlNode> data);
+		void ResolveTraitData(Actor self, MiniYaml data);
 	}
 
 	[RequireExplicitImplementation]
@@ -550,7 +573,7 @@ namespace OpenRA.Traits
 		{
 			Id = id;
 			Name = map.GetLocalisedString(name);
-			Description = map.GetLocalisedString(description);
+			Description = description != null ? map.GetLocalisedString(description) : null;
 			IsVisible = visible;
 			DisplayOrder = displayorder;
 			Values = values.ToDictionary(v => v.Key, v => map.GetLocalisedString(v.Value));

@@ -64,7 +64,7 @@ namespace OpenRA.Mods.Common.Traits
 						continue;
 
 					inAttackRange = true;
-					a.CheckFire(self, facing, target);
+					a.CheckFire(self, facing, target, false);
 				}
 
 				// Actors without armaments may want to trigger an action when it passes the target

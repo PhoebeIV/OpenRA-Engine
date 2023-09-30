@@ -148,6 +148,8 @@ namespace OpenRA.Server
 		GameInformation gameInfo;
 		readonly List<GameInformation.Player> worldPlayers = new();
 		readonly Stopwatch pingUpdated = Stopwatch.StartNew();
+
+		public readonly VoteKickTracker VoteKickTracker;
 		readonly PlayerMessageTracker playerMessageTracker;
 
 		public ServerState State
@@ -318,6 +320,7 @@ namespace OpenRA.Server
 			MapStatusCache = new MapStatusCache(modData, MapStatusChanged, type == ServerType.Dedicated && settings.EnableLintChecks);
 
 			playerMessageTracker = new PlayerMessageTracker(this, DispatchOrdersToClient, SendLocalizedMessageTo);
+			VoteKickTracker = new VoteKickTracker(this);
 
 			LobbyInfo = new Session
 			{
@@ -436,8 +439,8 @@ namespace OpenRA.Server
 			{
 				// Send handshake and client index.
 				var ms = new MemoryStream(8);
-				ms.WriteArray(BitConverter.GetBytes(ProtocolVersion.Handshake));
-				ms.WriteArray(BitConverter.GetBytes(newConn.PlayerIndex));
+				ms.Write(ProtocolVersion.Handshake);
+				ms.Write(newConn.PlayerIndex);
 				newConn.TrySendData(ms.ToArray());
 
 				// Dispatch a handshake order
@@ -704,9 +707,9 @@ namespace OpenRA.Server
 		static byte[] CreateFrame(int client, int frame, byte[] data)
 		{
 			var ms = new MemoryStream(data.Length + 12);
-			ms.WriteArray(BitConverter.GetBytes(data.Length + 4));
-			ms.WriteArray(BitConverter.GetBytes(client));
-			ms.WriteArray(BitConverter.GetBytes(frame));
+			ms.Write(data.Length + 4);
+			ms.Write(client);
+			ms.Write(frame);
 			ms.WriteArray(data);
 			return ms.GetBuffer();
 		}
@@ -714,9 +717,9 @@ namespace OpenRA.Server
 		static byte[] CreateAckFrame(int frame, byte count)
 		{
 			var ms = new MemoryStream(14);
-			ms.WriteArray(BitConverter.GetBytes(6));
-			ms.WriteArray(BitConverter.GetBytes(0));
-			ms.WriteArray(BitConverter.GetBytes(frame));
+			ms.Write(6);
+			ms.Write(0);
+			ms.Write(frame);
 			ms.WriteByte((byte)OrderType.Ack);
 			ms.WriteByte(count);
 			return ms.GetBuffer();
@@ -725,9 +728,9 @@ namespace OpenRA.Server
 		static byte[] CreateTickScaleFrame(float scale)
 		{
 			var ms = new MemoryStream(17);
-			ms.WriteArray(BitConverter.GetBytes(9));
-			ms.WriteArray(BitConverter.GetBytes(0));
-			ms.WriteArray(BitConverter.GetBytes(0));
+			ms.Write(9);
+			ms.Write(0);
+			ms.Write(0);
 			ms.WriteByte((byte)OrderType.TickScale);
 			ms.Write(scale);
 			return ms.GetBuffer();
@@ -1162,15 +1165,8 @@ namespace OpenRA.Server
 			return LobbyInfo.ClientWithIndex(conn.PlayerIndex);
 		}
 
-		/// <summary>Does not check if client is admin.</summary>
-		public bool CanKickClient(Session.Client kickee)
-		{
-			if (State != ServerState.GameStarted || kickee.IsObserver)
-				return true;
-
-			var player = worldPlayers.FirstOrDefault(p => p?.ClientIndex == kickee.Index);
-			return player != null && player.Outcome != WinState.Undefined;
-		}
+		public bool HasClientWonOrLost(Session.Client client) =>
+			worldPlayers.FirstOrDefault(p => p?.ClientIndex == client.Index)?.Outcome != WinState.Undefined;
 
 		public void DropClient(Connection toDrop)
 		{

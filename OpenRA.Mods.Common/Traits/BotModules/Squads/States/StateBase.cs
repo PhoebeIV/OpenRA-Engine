@@ -85,9 +85,8 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 			if (!squad.IsValid)
 				return false;
 
-			var randomSquadUnit = squad.Units.Random(squad.Random);
 			var dangerRadius = squad.SquadManager.Info.DangerScanRadius;
-			var units = squad.World.FindActorsInCircle(randomSquadUnit.CenterPosition, WDist.FromCells(dangerRadius)).ToList();
+			var units = squad.World.FindActorsInCircle(squad.CenterPosition(), WDist.FromCells(dangerRadius)).ToList();
 
 			// If there are any own buildings within the DangerRadius, don't flee
 			// PERF: Avoid LINQ
@@ -106,21 +105,7 @@ namespace OpenRA.Mods.Common.Traits.BotModules.Squads
 
 		protected static bool IsRearming(Actor a)
 		{
-			if (a.IsIdle)
-				return false;
-
-			var activity = a.CurrentActivity;
-			if (activity.GetType() == typeof(Resupply))
-				return true;
-
-			var next = activity.NextActivity;
-			if (next == null)
-				return false;
-
-			if (next.GetType() == typeof(Resupply))
-				return true;
-
-			return false;
+			return !a.IsIdle && (a.CurrentActivity.ActivitiesImplementing<Resupply>().Any() || a.CurrentActivity.ActivitiesImplementing<ReturnToBase>().Any());
 		}
 
 		protected static bool FullAmmo(IEnumerable<AmmoPool> ammoPools)

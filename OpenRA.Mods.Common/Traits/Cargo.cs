@@ -107,9 +107,9 @@ namespace OpenRA.Mods.Common.Traits
 		bool takeOffAfterLoad;
 		bool initialised;
 
-		readonly CachedTransform<CPos, IEnumerable<CPos>> currentAdjacentCells;
+		readonly CachedTransform<CPos, CPos[]> currentAdjacentCells;
 
-		public IEnumerable<CPos> CurrentAdjacentCells => currentAdjacentCells.Update(self.Location);
+		public CPos[] CurrentAdjacentCells => currentAdjacentCells.Update(self.Location);
 
 		public IEnumerable<Actor> Passengers => cargo;
 		public int PassengerCount => cargo.Count;
@@ -123,8 +123,8 @@ namespace OpenRA.Mods.Common.Traits
 			self = init.Self;
 			checkTerrainType = info.UnloadTerrainTypes.Count > 0;
 
-			currentAdjacentCells = new CachedTransform<CPos, IEnumerable<CPos>>(loc =>
-				Util.AdjacentCells(self.World, Target.FromActor(self)).Where(c => loc != c));
+			currentAdjacentCells = new CachedTransform<CPos, CPos[]>(loc =>
+				Util.AdjacentCells(self.World, Target.FromActor(self)).Where(c => loc != c).ToArray());
 
 			var runtimeCargoInit = init.GetOrDefault<RuntimeCargoInit>(info);
 			var cargoInit = init.GetOrDefault<CargoInit>(info);
@@ -241,9 +241,10 @@ namespace OpenRA.Mods.Common.Traits
 
 			if (checkTerrainType)
 			{
-				var terrainType = self.World.Map.GetTerrainInfo(self.Location).Type;
+				if (!self.World.Map.Contains(self.Location))
+					return false;
 
-				if (!Info.UnloadTerrainTypes.Contains(terrainType))
+				if (!Info.UnloadTerrainTypes.Contains(self.World.Map.GetTerrainInfo(self.Location).Type))
 					return false;
 			}
 
@@ -408,29 +409,36 @@ namespace OpenRA.Mods.Common.Traits
 		}
 
 		void INotifyKilled.Killed(Actor self, AttackInfo e)
-		{
-			if (Info.EjectOnDeath)
-				while (!IsEmpty() && CanUnload(BlockedByActor.All))
+ 		{
+			// IsAtGroundLevel contains Map.Contains(self.Location) check.
+			if (Info.EjectOnDeath && self.IsAtGroundLevel() && (!checkTerrainType || Info.UnloadTerrainTypes.Contains(self.World.Map.GetTerrainInfo(self.Location).Type)))
+			{
+				while (!IsEmpty())
 				{
 					var passenger = Unload(self);
-					var cp = self.CenterPosition;
-					var inAir = self.World.Map.DistanceAboveTerrain(cp).Length != 0;
-					var positionable = passenger.Trait<IPositionable>();
-					positionable.SetPosition(passenger, self.Location);
-
-					if (!inAir && positionable.CanEnterCell(self.Location, self, BlockedByActor.None))
+					self.World.AddFrameEndTask(w =>
 					{
-						self.World.AddFrameEndTask(w => w.Add(passenger));
-						var nbms = passenger.TraitsImplementing<INotifyBlockingMove>();
-						foreach (var nbm in nbms)
-							nbm.OnNotifyBlockingMove(passenger, passenger);
-					}
-					else
-						passenger.Kill(e.Attacker);
-				}
+						var positionable = passenger.Trait<IPositionable>();
+						if (positionable.CanEnterCell(self.Location, self, BlockedByActor.All))
+						{
+							positionable.SetPosition(passenger, self.Location);
+							w.Add(passenger);
 
-			foreach (var c in cargo)
-				c.Kill(e.Attacker);
+							var nbms = passenger.TraitsImplementing<INotifyBlockingMove>();
+							foreach (var nbm in nbms)
+								nbm.OnNotifyBlockingMove(passenger, passenger);
+
+							// For show.
+							passenger.QueueActivity(new Nudge(passenger));
+						}
+						else
+							passenger.Kill(e.Attacker);
+					});
+				}
+			}
+			else
+				foreach (var c in cargo)
+					c.Kill(e.Attacker);
 
 			cargo.Clear();
 		}
