@@ -126,10 +126,14 @@ namespace OpenRA.Mods.CA.Traits
 
 		void INotifyDamage.Damaged(Actor self, AttackInfo e)
 		{
+			if (IsTraitDisabled)
+				return;
+
 			var damageTypes = e.Damage.DamageTypes;
 			var overrideTypes = Info.OverrideDamageType;
 			var bypassTypes = Info.BypassDamageTypes;
-			if (IsTraitDisabled || e.Damage.DamageTypes.Overlaps(overrideTypes))
+
+			if (e.Damage.DamageTypes.Overlaps(overrideTypes))
 				return;
 
 			if ((strength == 0 && e.Damage.Value > 0) || e.Damage.Value == 0 || e.Attacker == self)
