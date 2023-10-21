@@ -32,6 +32,7 @@ namespace OpenRA.Mods.Common.Scripting
 		}
 
 		[Desc("True on the 31st of October.")]
+		[Obsolete("Use CurrentMonth and CurrentDay instead.")]
 		public bool IsHalloween => DateTime.Today.Month == 10 && DateTime.Today.Day == 31;
 
 		[Desc("Get the current game time (in ticks).")]
@@ -42,6 +43,13 @@ namespace OpenRA.Mods.Common.Scripting
 		{
 			return seconds * ticksPerSecond;
 		}
+
+		public int CurrentYear => DateTime.Now.Year;
+		public int CurrentMonth => DateTime.Now.Month;
+		public int CurrentDay => DateTime.Now.Day;
+		public int CurrentHour => DateTime.Now.Hour;
+		public int CurrentMinute => DateTime.Now.Minute;
+		public int CurrentSecond => DateTime.Now.Second;
 
 		[Desc("Converts the number of minutes into game time (ticks).")]
 		public int Minutes(int minutes)
