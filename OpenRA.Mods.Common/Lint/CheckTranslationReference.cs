@@ -17,6 +17,7 @@ using System.Reflection;
 using Linguini.Syntax.Ast;
 using Linguini.Syntax.Parser;
 using OpenRA.Traits;
+using OpenRA.Widgets;
 
 namespace OpenRA.Mods.Common.Lint
 {
@@ -111,7 +112,7 @@ namespace OpenRA.Mods.Common.Lint
 			{
 				foreach (var fieldInfo in modType.GetFields(Binding).Where(m => Utility.HasAttribute<TranslationReferenceAttribute>(m)))
 				{
-					if (fieldInfo.IsInitOnly)
+					if (fieldInfo.IsInitOnly || !fieldInfo.IsStatic)
 						continue;
 
 					if (fieldInfo.FieldType != typeof(string))
@@ -120,7 +121,7 @@ namespace OpenRA.Mods.Common.Lint
 						continue;
 					}
 
-					var key = (string)fieldInfo.GetValue(string.Empty);
+					var key = (string)fieldInfo.GetValue(null);
 					if (referencedKeys.Contains(key))
 						continue;
 
@@ -133,6 +134,23 @@ namespace OpenRA.Mods.Common.Lint
 
 					referencedKeys.Add(key);
 				}
+			}
+
+			var translatableFields = modData.ObjectCreator.GetTypes()
+				.Where(t => t.Name.EndsWith("Widget", StringComparison.InvariantCulture) && t.IsSubclassOf(typeof(Widget)))
+				.ToDictionary(
+					t => t.Name[..^6],
+					t => t.GetFields().Where(f => f.HasAttribute<TranslationReferenceAttribute>()).ToArray())
+				.Where(t => t.Value.Length > 0)
+				.ToDictionary(
+					t => t.Key,
+					t => t.Value.Select(f => (f.Name, f, Utility.GetCustomAttributes<TranslationReferenceAttribute>(f, true).First())).ToArray());
+
+			foreach (var filename in modData.Manifest.ChromeLayout)
+			{
+				var nodes = MiniYaml.FromStream(modData.DefaultFileSystem.Open(filename));
+				foreach (var node in nodes)
+					CheckChrome(node, translation, language, emitError, emitWarning, translatableFields);
 			}
 
 			foreach (var file in modData.Manifest.Translations)
@@ -177,6 +195,47 @@ namespace OpenRA.Mods.Common.Lint
 					}
 				}
 			}
+		}
+
+		void CheckChrome(MiniYamlNode node, Translation translation, string language, Action<string> emitError, Action<string> emitWarning,
+			Dictionary<string, (string Name, FieldInfo Field, TranslationReferenceAttribute Attribute)[]> translatables)
+		{
+			var nodeType = node.Key.Split('@')[0];
+			foreach (var childNode in node.Value.Nodes)
+			{
+				if (translatables.ContainsKey(nodeType))
+				{
+					var childType = childNode.Key.Split('@')[0];
+					var field = translatables[nodeType].FirstOrDefault(t => t.Name == childType);
+					if (field.Name == null)
+						continue;
+
+					var key = childNode.Value.Value;
+					if (key == null)
+					{
+						if (!field.Attribute.Optional)
+							emitError($"Widget `{node.Key}` in field `{childType}` has an empty translation reference.");
+
+						continue;
+					}
+
+					if (referencedKeys.Contains(key))
+						continue;
+
+					if (!key.Any(char.IsLetter))
+						continue;
+
+					if (!translation.HasMessage(key))
+						emitWarning($"`{key}` defined by `{node.Key}` is not present in `{language}` translation.");
+
+					referencedKeys.Add(key);
+				}
+			}
+
+			foreach (var childNode in node.Value.Nodes)
+				if (childNode.Key == "Children")
+					foreach (var n in childNode.Value.Nodes)
+						CheckChrome(n, translation, language, emitError, emitWarning, translatables);
 		}
 
 		void CheckUnusedKey(string key, string attribute, Action<string> emitWarning, string file)

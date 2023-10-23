@@ -29,15 +29,13 @@ dropdown-map-creeps =
     .label = Creep Actors
     .description = Hostile forces spawn on the battlefield
 
-options-difficulty =
-    .normal = Normal
-
 ## Structures
 notification-construction-complete = Construction complete.
 notification-unit-ready = Unit ready.
 notification-unable-to-comply-building-in-progress = Unable to comply. Building in progress.
 notification-repairing = Repairing.
 notification-unit-repaired = Unit repaired.
+notification-unit-sold = Unit sold.
 notification-ion-cannon-ready = Ion cannon ready.
 notification-select-target = Select target.
 notification-cluster-missile-ready = Cluster missile ready.

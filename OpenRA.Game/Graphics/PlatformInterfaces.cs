@@ -20,13 +20,12 @@ namespace OpenRA
 		Automatic,
 		ANGLE,
 		Modern,
-		Embedded,
-		Legacy
+		Embedded
 	}
 
 	public interface IPlatform
 	{
-		IPlatformWindow CreateWindow(Size size, WindowMode windowMode, float scaleModifier, int vertexBatchSize, int indexBatchSize, int videoDisplay, GLProfile profile, bool enableLegacyGL);
+		IPlatformWindow CreateWindow(Size size, WindowMode windowMode, float scaleModifier, int vertexBatchSize, int indexBatchSize, int videoDisplay, GLProfile profile);
 		ISoundEngine CreateSound(string device);
 		IFont CreateFont(byte[] data);
 	}
@@ -157,6 +156,7 @@ namespace OpenRA
 	{
 		void SetData(byte[] colors, int width, int height);
 		void SetFloatData(float[] data, int width, int height);
+		void SetDataFromReadBuffer(Rectangle rect);
 		byte[] GetData();
 		Size Size { get; }
 		TextureScaleFilter ScaleFilter { get; set; }
