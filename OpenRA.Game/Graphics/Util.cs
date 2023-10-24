@@ -30,7 +30,7 @@ namespace OpenRA.Graphics
 			return indices;
 		}
 
-		public static void FastCreateQuad(Vertex[] vertices, in float3 o, Sprite r, int2 samplers, float paletteTextureIndex, int nv,
+		public static void FastCreateQuad(Vertex[] vertices, in float3 o, Sprite r, int2 samplers, int paletteTextureIndex, int nv,
 			in float3 size, in float3 tint, float alpha, float rotation = 0f)
 		{
 			float3 a, b, c, d;
@@ -72,7 +72,7 @@ namespace OpenRA.Graphics
 
 		public static void FastCreateQuad(Vertex[] vertices,
 			in float3 a, in float3 b, in float3 c, in float3 d,
-			Sprite r, int2 samplers, float paletteTextureIndex,
+			Sprite r, int2 samplers, int paletteTextureIndex,
 			in float3 tint, float alpha, int nv)
 		{
 			float sl = 0;
@@ -94,11 +94,13 @@ namespace OpenRA.Graphics
 				attribC |= samplers.Y << 9;
 			}
 
-			var fAttribC = (float)attribC;
-			vertices[nv] = new Vertex(a, r.Left, r.Top, sl, st, paletteTextureIndex, fAttribC, tint, alpha);
-			vertices[nv + 1] = new Vertex(b, r.Right, r.Top, sr, st, paletteTextureIndex, fAttribC, tint, alpha);
-			vertices[nv + 2] = new Vertex(c, r.Right, r.Bottom, sr, sb, paletteTextureIndex, fAttribC, tint, alpha);
-			vertices[nv + 3] = new Vertex(d, r.Left, r.Bottom, sl, sb, paletteTextureIndex, fAttribC, tint, alpha);
+			attribC |= (paletteTextureIndex & 0xFFFF) << 16;
+
+			var uAttribC = (uint)attribC;
+			vertices[nv] = new Vertex(a, r.Left, r.Top, sl, st, uAttribC, tint, alpha);
+			vertices[nv + 1] = new Vertex(b, r.Right, r.Top, sr, st, uAttribC, tint, alpha);
+			vertices[nv + 2] = new Vertex(c, r.Right, r.Bottom, sr, sb, uAttribC, tint, alpha);
+			vertices[nv + 3] = new Vertex(d, r.Left, r.Bottom, sl, sb, uAttribC, tint, alpha);
 		}
 
 		public static void FastCopyIntoChannel(Sprite dest, byte[] src, SpriteFrameType srcType)
