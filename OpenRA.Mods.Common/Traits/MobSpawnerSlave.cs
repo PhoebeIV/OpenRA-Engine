@@ -34,6 +34,7 @@ namespace OpenRA.Mods.AS.Traits
 		public IPositionable Positionable { get; private set; }
 
 		MobSpawnerMaster spawnerMaster;
+		private static ActorInitializer init;
 
 		public bool IsMoving()
 		{
@@ -41,7 +42,7 @@ namespace OpenRA.Mods.AS.Traits
 		}
 
 		public MobSpawnerSlave(MobSpawnerSlaveInfo info)
-			: base(info)
+			: base(init, info)
 		{
 			//// this.info = info;
 		}

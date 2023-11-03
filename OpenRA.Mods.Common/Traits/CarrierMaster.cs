@@ -1,10 +1,10 @@
 ﻿#region Copyright & License Information
-/*
- * Copyright 2015- OpenRA.Mods.AS Developers (see AUTHORS)
- * This file is a part of a third-party plugin for OpenRA, which is
- * free software. It is made available to you under the terms of the
- * GNU General Public License as published by the Free Software
- * Foundation. For more information, see COPYING.
+/**
+ * Copyright (c) The OpenRA Combined Arms Developers (see CREDITS).
+ * This file is part of OpenRA Combined Arms, which is free software.
+ * It is made available to you under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version. For more information, see COPYING.
  */
 #endregion
 
@@ -14,6 +14,7 @@ using System.Linq;
 using OpenRA.Mods.Common;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Traits;
+using OpenRA.Mods.Common.Activities;
 
 namespace OpenRA.Mods.AS.Traits
 {
@@ -30,11 +31,24 @@ namespace OpenRA.Mods.AS.Traits
 		[Desc("The condition to grant to self right after launching a spawned unit. (Used by V3 to make immobile.)")]
 		public readonly string LaunchingCondition = null;
 
+		[GrantedConditionReference]
+		[Desc("The condition to grant to self when slaves are entering.)")]
+		public readonly string BeingEnteredCondition = null;
+
 		[Desc("After this many ticks, we remove the condition.")]
 		public readonly int LaunchingTicks = 15;
 
+		[Desc("Max distance slaves can travel from master before being recalled.")]
+		public readonly WDist MaxSlaveDistance = WDist.FromCells(18);
+
+		[Desc("Ticks between performing range checks for slave maximum distance.")]
+		public readonly int MaxSlaveDistanceCheckInterval = 50;
+
 		[Desc("Instantly repair spawners when they return?")]
 		public readonly bool InstantRepair = true;
+
+		[Desc("If true, all slaves must be inside carrier before rearming.")]
+		public readonly bool RearmAsGroup = false;
 
 		[GrantedConditionReference]
 		[Desc("The condition to grant to self while spawned units are loaded.",
@@ -67,6 +81,11 @@ namespace OpenRA.Mods.AS.Traits
 
 		int launchCondition = Actor.InvalidConditionToken;
 		int launchConditionTicks;
+
+		int beingEnteredToken = Actor.InvalidConditionToken;
+
+		Target currentTarget;
+		int maxDistanceCheckTicks;
 
 		public CarrierMaster(ActorInitializer init, CarrierMasterInfo info)
 			: base(init, info)
@@ -116,6 +135,8 @@ namespace OpenRA.Mods.AS.Traits
 		// invokes Attacking()
 		void INotifyAttack.Attacking(Actor self, in Target target, Armament a, Barrel barrel)
 		{
+			currentTarget = target;
+
 			if (IsTraitDisabled || IsTraitPaused || !Info.ArmamentNames.Contains(a.Info.Name))
 				return;
 
@@ -128,8 +149,6 @@ namespace OpenRA.Mods.AS.Traits
 			if (carrierSlaveEntry == null)
 				return;
 
-			carrierSlaveEntry.IsLaunched = true; // mark as launched
-
 			if (CarrierMasterInfo.LaunchingCondition != null)
 			{
 				if (launchCondition == Actor.InvalidConditionToken)
@@ -138,12 +157,13 @@ namespace OpenRA.Mods.AS.Traits
 				launchConditionTicks = CarrierMasterInfo.LaunchingTicks;
 			}
 
-			SpawnIntoWorld(self, carrierSlaveEntry.Actor, self.CenterPosition + carrierSlaveEntry.Offset.Rotate(self.Orientation));
+			SpawnIntoWorld(self, carrierSlaveEntry.Actor, self.CenterPosition);
+			carrierSlaveEntry.IsLaunched = true; // mark as launched
 
-			if (spawnContainTokens.TryGetValue(a.Info.Name, out var spawnContainToken) && spawnContainToken.Any())
+			if (spawnContainTokens.TryGetValue(a.Info.Name, out var spawnContainToken) && spawnContainToken.Count > 0)
 				self.RevokeCondition(spawnContainToken.Pop());
 
-			if (loadedTokens.Any())
+			if (loadedTokens.Count > 0 && CarrierMasterInfo.LoadedCondition != null)
 				self.RevokeCondition(loadedTokens.Pop());
 
 			// Lambdas can't use 'in' variables, so capture a copy for later
@@ -211,7 +231,8 @@ namespace OpenRA.Mods.AS.Traits
 			if (CarrierMasterInfo.SpawnContainConditions.TryGetValue(a.Info.Name, out var spawnContainCondition))
 				spawnContainTokens.GetOrAdd(a.Info.Name).Push(self.GrantCondition(spawnContainCondition));
 
-			loadedTokens.Push(self.GrantCondition(CarrierMasterInfo.LoadedCondition));
+			if (CarrierMasterInfo.LoadedCondition != null)
+				loadedTokens.Push(self.GrantCondition(CarrierMasterInfo.LoadedCondition));
 		}
 
 		public override void Replenish(Actor self, BaseSpawnerSlaveEntry entry)
@@ -221,7 +242,8 @@ namespace OpenRA.Mods.AS.Traits
 			if (CarrierMasterInfo.SpawnContainConditions.TryGetValue(entry.Actor.Info.Name, out var spawnContainCondition))
 				spawnContainTokens.GetOrAdd(entry.Actor.Info.Name).Push(self.GrantCondition(spawnContainCondition));
 
-			loadedTokens.Push(self.GrantCondition(CarrierMasterInfo.LoadedCondition));
+			if (CarrierMasterInfo.LoadedCondition != null)
+				loadedTokens.Push(self.GrantCondition(CarrierMasterInfo.LoadedCondition));
 		}
 
 		void ITick.Tick(Actor self)
@@ -244,13 +266,43 @@ namespace OpenRA.Mods.AS.Traits
 				}
 			}
 
+			var slaveIsEntering = false;
+			var numLaunched = SlaveEntries.Count(a => a.IsLaunched);
+
 			// Rearm
 			foreach (var slaveEntry in SlaveEntries)
 			{
 				var carrierSlaveEntry = slaveEntry as CarrierSlaveEntry;
+				if (carrierSlaveEntry.Actor.CurrentActivity is EnterCarrierMaster)
+					slaveIsEntering = true;
+
+				if (CarrierMasterInfo.RearmAsGroup && numLaunched > 0)
+					continue;
+
 				if (carrierSlaveEntry.RearmTicks > 0)
 					carrierSlaveEntry.RearmTicks--;
 			}
+
+			if (slaveIsEntering && beingEnteredToken == Actor.InvalidConditionToken)
+				self.GrantCondition(CarrierMasterInfo.BeingEnteredCondition);
+			else if (!slaveIsEntering && beingEnteredToken != Actor.InvalidConditionToken)
+				self.RevokeCondition(beingEnteredToken);
+
+			// range check
+			RangeCheck(self);
+		}
+
+		protected void RangeCheck(Actor self)
+		{
+			if (--maxDistanceCheckTicks > 0)
+				return;
+
+			maxDistanceCheckTicks = CarrierMasterInfo.MaxSlaveDistanceCheckInterval;
+			var pos = self.CenterPosition;
+			var inRange = currentTarget.IsInRange(pos, CarrierMasterInfo.MaxSlaveDistance);
+
+			if (!inRange)
+				Recall();
 		}
 
 		protected override void TraitPaused(Actor self)

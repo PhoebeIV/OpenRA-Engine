@@ -1,15 +1,17 @@
 ﻿#region Copyright & License Information
-/*
- * Copyright 2015- OpenRA.Mods.AS Developers (see AUTHORS)
- * This file is a part of a third-party plugin for OpenRA, which is
- * free software. It is made available to you under the terms of the
- * GNU General Public License as published by the Free Software
- * Foundation. For more information, see COPYING.
+/**
+ * Copyright (c) The OpenRA Combined Arms Developers (see CREDITS).
+ * This file is part of OpenRA Combined Arms, which is free software.
+ * It is made available to you under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version. For more information, see COPYING.
  */
 #endregion
 
+using System.Linq;
 using OpenRA.Mods.Common.Activities;
 using OpenRA.Traits;
+using OpenRA.Mods.Common.Traits;
 
 namespace OpenRA.Mods.AS.Traits
 {
@@ -19,19 +21,21 @@ namespace OpenRA.Mods.AS.Traits
 		[Desc("Move this close to the spawner, before entering it.")]
 		public readonly WDist LandingDistance = new WDist(5 * 1024);
 
-		public override object Create(ActorInitializer init) { return new CarrierSlave(this); }
+		public override object Create(ActorInitializer init) { return new CarrierSlave(init, this); }
 	}
 
 	public class CarrierSlave : BaseSpawnerSlave, INotifyIdle
 	{
+		readonly AmmoPool[] ammoPools;
 		public readonly CarrierSlaveInfo Info;
 
 		CarrierMaster spawnerMaster;
 
-		public CarrierSlave(CarrierSlaveInfo info)
-			: base(info)
+		public CarrierSlave(ActorInitializer init, CarrierSlaveInfo info)
+			: base(init, info)
 		{
 			Info = info;
+			ammoPools = init.Self.TraitsImplementing<AmmoPool>().ToArray();
 		}
 
 		public void EnterSpawner(Actor self)
@@ -45,6 +49,7 @@ namespace OpenRA.Mods.AS.Traits
 				return;
 
 			// Cancel whatever else self was doing and return.
+			var target = Target.FromActor(Master);
 			self.QueueActivity(false, new EnterCarrierMaster(self, Master, spawnerMaster));
 		}
 
@@ -52,6 +57,15 @@ namespace OpenRA.Mods.AS.Traits
 		{
 			base.LinkMaster(self, master, spawnerMaster);
 			this.spawnerMaster = spawnerMaster as CarrierMaster;
+		}
+
+		bool NeedToReload(Actor self)
+		{
+			// The unit may not have ammo but will have unlimited ammunitions.
+			if (ammoPools.Length == 0)
+				return false;
+
+			return ammoPools.All(x => !x.HasAmmo);
 		}
 
 		void INotifyIdle.TickIdle(Actor self)

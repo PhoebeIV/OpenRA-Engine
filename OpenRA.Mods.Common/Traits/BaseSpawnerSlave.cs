@@ -1,10 +1,10 @@
 ﻿#region Copyright & License Information
-/*
- * Copyright 2015- OpenRA.Mods.AS Developers (see AUTHORS)
- * This file is a part of a third-party plugin for OpenRA, which is
- * free software. It is made available to you under the terms of the
- * GNU General Public License as published by the Free Software
- * Foundation. For more information, see COPYING.
+/**
+ * Copyright (c) The OpenRA Combined Arms Developers (see CREDITS).
+ * This file is part of OpenRA Combined Arms, which is free software.
+ * It is made available to you under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version. For more information, see COPYING.
  */
 #endregion
 
@@ -26,7 +26,7 @@ namespace OpenRA.Mods.AS.Traits
 		public readonly bool AllowOwnerChange = false;
 
 		[Desc("Types of damage this actor explodes with due to an unallowed slave action. Leave empty for no damage types.")]
-		public readonly BitSet<DamageType> DamageTypes = default;
+		public readonly BitSet<DamageType> DamageTypes = default(BitSet<DamageType>);
 
 		[GrantedConditionReference]
 		[Desc("The condition to grant when the master trait is disabled.")]
@@ -36,7 +36,7 @@ namespace OpenRA.Mods.AS.Traits
 		[Desc("The condition to grant when the master trait is paused.")]
 		public readonly string GrantConditionWhenMasterIsPaused = null;
 
-		public override object Create(ActorInitializer init) { return new BaseSpawnerSlave(this); }
+		public override object Create(ActorInitializer init) { return new BaseSpawnerSlave(init, this); }
 	}
 
 	public class BaseSpawnerSlave : INotifyCreated, INotifyKilled, INotifyOwnerChanged
@@ -57,7 +57,7 @@ namespace OpenRA.Mods.AS.Traits
 		int masterTraitDisabledConditionToken = Actor.InvalidConditionToken;
 		int masterTraitPausedConditionToken = Actor.InvalidConditionToken;
 
-		public BaseSpawnerSlave(BaseSpawnerSlaveInfo info)
+		public BaseSpawnerSlave(ActorInitializer init, BaseSpawnerSlaveInfo info)
 		{
 			this.info = info;
 		}

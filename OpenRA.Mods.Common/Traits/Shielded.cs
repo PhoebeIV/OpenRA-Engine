@@ -58,7 +58,7 @@ namespace OpenRA.Mods.CA.Traits
 		public override object Create(ActorInitializer init) { return new Shielded(init, this); }
 	}
 
-	public class Shielded : ConditionalTrait<ShieldedInfo>, ITick, ISync, ISelectionBar, IDamageModifier, INotifyDamage
+	sealed class Shielded : ConditionalTrait<ShieldedInfo>, ITick, ISync, ISelectionBar, IDamageModifier, INotifyDamage
 	{
 		IHealth gethealth;
 		readonly Lazy<IShieldRegenModifier[]> shieldModifiers;
@@ -68,8 +68,11 @@ namespace OpenRA.Mods.CA.Traits
 
 		[Sync]
 		int strength;
+		[Sync]
 		int intervalTicks;
+		[Sync]
 		int delayTicks;
+		[Sync]
 		int maxshield;
 
 		public Shielded(ActorInitializer init, ShieldedInfo info)
@@ -91,14 +94,14 @@ namespace OpenRA.Mods.CA.Traits
 
 		void ITick.Tick(Actor self)
 		{
+			if (self.IsDead || IsTraitDisabled)
+				return;
+
 			Regenerate(self);
 		}
 
-		protected void Regenerate(Actor self)
+		void Regenerate(Actor self)
 		{
-			if (IsTraitDisabled)
-				return;
-
 			if (strength == maxshield && conditionToken2 != Actor.InvalidConditionToken)
 				conditionToken2 = self.RevokeCondition(conditionToken2);
 			else if (strength < maxshield && conditionToken2 == Actor.InvalidConditionToken)
@@ -126,7 +129,7 @@ namespace OpenRA.Mods.CA.Traits
 
 		void INotifyDamage.Damaged(Actor self, AttackInfo e)
 		{
-			if (IsTraitDisabled)
+			if (self.IsDead || IsTraitDisabled)
 				return;
 
 			var damageTypes = e.Damage.DamageTypes;

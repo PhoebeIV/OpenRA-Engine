@@ -206,7 +206,7 @@ namespace OpenRA.Mods.AS.Traits
 			foreach (var se in slaveEntries)
 			{
 				if (se.IsValid && !se.Actor.IsInWorld)
-					SpawnIntoWorld(self, se.Actor, centerPosition + se.Offset.Rotate(self.Orientation));
+					SpawnIntoWorld(self, se.Actor, centerPosition);
 			}
 
 			spawnReplaceTicks = Util.ApplyPercentageModifiers(Info.RespawnTicks, reloadModifiers.Select(rm => rm.GetReloadModifier()));

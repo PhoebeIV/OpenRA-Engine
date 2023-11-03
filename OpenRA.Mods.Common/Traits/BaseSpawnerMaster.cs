@@ -1,10 +1,10 @@
 ﻿#region Copyright & License Information
-/*
- * Copyright 2015- OpenRA.Mods.AS Developers (see AUTHORS)
- * This file is a part of a third-party plugin for OpenRA, which is
- * free software. It is made available to you under the terms of the
- * GNU General Public License as published by the Free Software
- * Foundation. For more information, see COPYING.
+/**
+ * Copyright (c) The OpenRA Combined Arms Developers (see CREDITS).
+ * This file is part of OpenRA Combined Arms, which is free software.
+ * It is made available to you under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version. For more information, see COPYING.
  */
 #endregion
 
@@ -31,7 +31,6 @@ namespace OpenRA.Mods.AS.Traits
 		public Actor Actor = null;
 		public BaseSpawnerSlave SpawnerSlave = null;
 		public bool IsLaunched;
-		public WVec Offset;
 
 		public bool IsValid { get { return Actor != null && !Actor.IsDead; } }
 	}
@@ -40,10 +39,7 @@ namespace OpenRA.Mods.AS.Traits
 	public class BaseSpawnerMasterInfo : PausableConditionalTraitInfo
 	{
 		[Desc("Spawn these units. Define this like paradrop support power.")]
-		public readonly string[] Actors = Array.Empty<string>();
-
-		[Desc("Place slave will be created.")]
-		public readonly WVec[] SpawnOffset = Array.Empty<WVec>();
+		public readonly string[] Actors;
 
 		[Desc("Slave actors to contain upon creation. Set to -1 to start with full slaves.")]
 		public readonly int InitialActorCount = -1;
@@ -71,16 +67,13 @@ namespace OpenRA.Mods.AS.Traits
 			base.RulesetLoaded(rules, ai);
 
 			if (Actors == null || Actors.Length == 0)
-				throw new YamlException("Actors is null or empty for a spawner trait in actor type {0}!");
-
-			if (SpawnOffset.Length > Actors.Length)
-				throw new YamlException("lenght of SpawnOffset can't be larger than the actors defined! (Actor type = {0})");
+				throw new YamlException($"Actors is null or empty for a spawner trait in actor type {ai.Name}!");
 
 			if (InitialActorCount > Actors.Length)
-				throw new YamlException("InitialActorCount can't be larger than the actors defined! (Actor type = {0})");
+				throw new YamlException($"InitialActorCount can't be larger than the actors defined! (Actor type = {ai.Name})");
 
 			if (InitialActorCount < -1)
-				throw new YamlException("InitialActorCount must be -1 or non-negative. Actor type = {0}");
+				throw new YamlException($"InitialActorCount must be -1 or non-negative. Actor type = {ai.Name}");
 		}
 
 		public override object Create(ActorInitializer init) { return new BaseSpawnerMaster(init, this); }
@@ -108,11 +101,6 @@ namespace OpenRA.Mods.AS.Traits
 			{
 				var entry = SlaveEntries[i];
 				entry.ActorName = info.Actors[i].ToLowerInvariant();
-			}
-
-			for (var i = 0; i < Info.SpawnOffset.Length; i++)
-			{
-				SlaveEntries[i].Offset = Info.SpawnOffset[i];
 			}
 		}
 
@@ -236,9 +224,9 @@ namespace OpenRA.Mods.AS.Traits
 					return;
 
 				var spawnOffset = exit == null ? WVec.Zero : exit.Info.SpawnOffset;
-				slave.Trait<IPositionable>().SetCenterPosition(slave, centerPosition + spawnOffset.Rotate(self.Orientation));
+				slave.Trait<IPositionable>().SetCenterPosition(slave, centerPosition + spawnOffset);
 
-				var location = self.World.Map.CellContaining(centerPosition + spawnOffset.Rotate(self.Orientation));
+				var location = self.World.Map.CellContaining(centerPosition + spawnOffset);
 
 				var mv = slave.Trait<IMove>();
 				slave.QueueActivity(mv.ReturnToCell(slave));
@@ -251,15 +239,13 @@ namespace OpenRA.Mods.AS.Traits
 
 		protected void SetSpawnedFacing(Actor spawned, Exit exit)
 		{
-			var facingOffset = facing == null ? WAngle.Zero : facing.Facing;
+			WAngle facingOffset = facing == null ? WAngle.Zero : facing.Facing;
 
-			var exitFacing = WAngle.Zero;
-			if (exit != null && exit.Info.Facing.HasValue)
-				exitFacing = exit.Info.Facing.Value;
+			var exitFacing = exit != null && exit.Info.Facing != null ? exit.Info.Facing : WAngle.Zero;
 
 			var spawnFacing = spawned.TraitOrDefault<IFacing>();
 			if (spawnFacing != null)
-				spawnFacing.Facing = facingOffset + exitFacing;
+				spawnFacing.Facing = facingOffset + exitFacing.Value;
 		}
 
 		public void StopSlaves()
