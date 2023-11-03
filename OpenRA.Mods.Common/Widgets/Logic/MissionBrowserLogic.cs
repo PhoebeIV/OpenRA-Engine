@@ -84,7 +84,10 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			var title = widget.GetOrNull<LabelWidget>("MISSIONBROWSER_TITLE");
 			if (title != null)
-				title.GetText = () => playingVideo != PlayingVideo.None ? selectedMap.Title : title.Text;
+			{
+				var label = TranslationProvider.GetString(title.Text);
+				title.GetText = () => playingVideo != PlayingVideo.None ? selectedMap.Title : label;
+			}
 
 			widget.Get("MISSION_INFO").IsVisible = () => selectedMap != null;
 
@@ -339,7 +342,11 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 				checkbox.GetText = () => option.Name;
 				if (option.Description != null)
-					checkbox.GetTooltipText = () => option.Description;
+				{
+					var (text, desc) = LobbyUtils.SplitOnFirstToken(option.Description);
+					checkbox.GetTooltipText = () => text;
+					checkbox.GetTooltipDesc = () => desc;
+				}
 
 				checkbox.IsVisible = () => true;
 				checkbox.IsChecked = () => missionOptions[option.Id] == "True";
@@ -373,7 +380,12 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 				dropdown.GetText = () => option.Values[missionOptions[option.Id]];
 				if (option.Description != null)
-					dropdown.GetTooltipText = () => option.Description;
+				{
+					var (text, desc) = LobbyUtils.SplitOnFirstToken(option.Description);
+					dropdown.GetTooltipText = () => text;
+					dropdown.GetTooltipDesc = () => desc;
+				}
+
 				dropdown.IsVisible = () => true;
 				dropdown.IsDisabled = () => option.IsLocked;
 

@@ -15,7 +15,7 @@ using OpenRA.Mods.Common.UpdateRules.Rules;
 
 namespace OpenRA.Mods.Common.UpdateRules
 {
-	public class UpdatePath
+	public sealed class UpdatePath
 	{
 		// Define known update paths from stable tags to the current bleed tip
 		//
@@ -111,6 +111,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 				new RemoveValidRelationsFromCapturable(),
 				new ExtractResourceStorageFromHarvester(),
 				new ReplacePaletteModifiers(),
+				new RemoveConyardChronoReturnAnimation(),
 
 				// Execute these rules last to avoid premature yaml merge crashes.
 				new AbstractDocking(),

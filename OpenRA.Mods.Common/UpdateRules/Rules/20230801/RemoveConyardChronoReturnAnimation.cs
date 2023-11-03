@@ -1,4 +1,4 @@
-﻿#region Copyright & License Information
+#region Copyright & License Information
 /*
  * Copyright (c) The OpenRA Developers and Contributors
  * This file is part of OpenRA, which is free software. It is made
@@ -13,16 +13,21 @@ using System.Collections.Generic;
 
 namespace OpenRA.Mods.Common.UpdateRules.Rules
 {
-	public class RemoveLaysTerrain : UpdateRule
+	public class RemoveConyardChronoReturnAnimation : UpdateRule
 	{
-		public override string Name => "'LaysTerrain' has been removed in favor of the new 'D2kBuilding' trait.";
+		public override string Name => "Remove Sequence and Body properties from ConyardChronoReturn.";
 
-		public override string Description => "'LaysTerrain' was removed.";
+		public override string Description => "These properties have been replaced with a dynamic vortex renderable.";
 
 		public override IEnumerable<string> UpdateActorNode(ModData modData, MiniYamlNodeBuilder actorNode)
 		{
-			if (actorNode.RemoveNodes("LaysTerrain") > 0)
-				yield return $"'LaysTerrain' was removed from {actorNode.Key} ({actorNode.Location.Filename}) without replacement.\n";
+			foreach (var trait in actorNode.ChildrenMatching("ConyardChronoReturn"))
+			{
+				trait.RemoveNodes("Sequence");
+				trait.RemoveNodes("Body");
+			}
+
+			yield break;
 		}
 	}
 }
