@@ -128,7 +128,8 @@ namespace OpenRA.Server
 		// Managed by LobbyCommands
 		public MapPreview Map;
 		public readonly MapStatusCache MapStatusCache;
-		public GameSave GameSave = null;
+		public GameSave GameSave;
+		public HashSet<string> MapPool;
 
 		// Default to the next frame for ServerType.Local - MP servers take the value from the selected GameSpeed.
 		public int OrderLatency = 1;
@@ -247,12 +248,9 @@ namespace OpenRA.Server
 					{
 						listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, 1);
 					}
-					catch (Exception ex)
+					catch (Exception ex) when (ex is SocketException || ex is ArgumentException)
 					{
-						if (ex is SocketException || ex is ArgumentException)
-							Log.Write("server", $"Failed to set socket option on {endpoint}: {ex.Message}");
-						else
-							throw;
+						Log.Write("server", $"Failed to set socket option on {endpoint}: {ex.Message}");
 					}
 
 					listener.Start();
@@ -316,7 +314,6 @@ namespace OpenRA.Server
 
 			serverTraits.TrimExcess();
 
-			Map = ModData.MapCache[settings.Map];
 			MapStatusCache = new MapStatusCache(modData, MapStatusChanged, type == ServerType.Dedicated && settings.EnableLintChecks);
 
 			playerMessageTracker = new PlayerMessageTracker(this, DispatchOrdersToClient, SendLocalizedMessageTo);
@@ -327,8 +324,6 @@ namespace OpenRA.Server
 				GlobalSettings =
 				{
 					RandomSeed = randomSeed,
-					Map = Map.Uid,
-					MapStatus = Session.MapStatus.Unknown,
 					ServerName = settings.Name,
 					EnableSingleplayer = settings.EnableSingleplayer || Type != ServerType.Dedicated,
 					EnableSyncReports = settings.EnableSyncReports,
@@ -348,8 +343,7 @@ namespace OpenRA.Server
 
 			new Thread(_ =>
 			{
-				// Initial status is set off the main thread to avoid triggering a load screen when joining a skirmish game
-				LobbyInfo.GlobalSettings.MapStatus = MapStatusCache[Map];
+				// Note: at least one of these is required to set the initial LobbyInfo.Map and MapStatus
 				foreach (var t in serverTraits.WithInterface<INotifyServerStart>())
 					t.ServerStarted(this);
 
@@ -710,7 +704,7 @@ namespace OpenRA.Server
 			ms.Write(data.Length + 4);
 			ms.Write(client);
 			ms.Write(frame);
-			ms.WriteArray(data);
+			ms.Write(data);
 			return ms.GetBuffer();
 		}
 
@@ -879,13 +873,13 @@ namespace OpenRA.Server
 
 		public void DispatchServerOrdersToClients(byte[] data, int frame = 0)
 		{
-			var from = 0;
-			var frameData = CreateFrame(from, frame, data);
+			const int From = 0;
+			var frameData = CreateFrame(From, frame, data);
 			foreach (var c in Conns.ToList())
 				if (c.Validated)
-					DispatchFrameToClient(c, from, frameData);
+					DispatchFrameToClient(c, From, frameData);
 
-			RecordOrder(frame, data, from);
+			RecordOrder(frame, data, From);
 		}
 
 		public void ReceiveOrders(Connection conn, int frame, byte[] data)
@@ -1432,6 +1426,27 @@ namespace OpenRA.Server
 			}
 
 			return new ConnectionTarget(endpoints);
+		}
+
+		public bool MapIsUnknown(string uid)
+		{
+			if (string.IsNullOrEmpty(uid))
+				return true;
+
+			var status = ModData.MapCache[uid].Status;
+			return status != MapStatus.Available && status != MapStatus.DownloadAvailable;
+		}
+
+		public bool MapIsKnown(string uid)
+		{
+			if (string.IsNullOrEmpty(uid))
+				return false;
+
+			if (MapPool != null && !MapPool.Contains(uid))
+				return false;
+
+			var status = ModData.MapCache[uid].Status;
+			return status == MapStatus.Available || status == MapStatus.DownloadAvailable;
 		}
 
 		interface IServerEvent { void Invoke(Server server); }

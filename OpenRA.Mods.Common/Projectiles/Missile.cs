@@ -499,8 +499,8 @@ namespace OpenRA.Mods.Common.Projectiles
 			lastHt = 0; // Height just before the last height change
 
 			// NOTE: Might be desired to unhardcode the lookahead step size
-			var stepSize = 32;
-			var step = new WVec(0, -stepSize, 0)
+			const int StepSize = 32;
+			var step = new WVec(0, -StepSize, 0)
 				.Rotate(new WRot(WAngle.Zero, WAngle.Zero, WAngle.FromFacing(hFacing))); // Step vector of length 128
 
 			// Probe terrain ahead of the missile
@@ -508,7 +508,7 @@ namespace OpenRA.Mods.Common.Projectiles
 			var maxLookaheadDistance = loopRadius * 4;
 			var posProbe = pos;
 			var curDist = 0;
-			var tickLimit = System.Math.Min(maxLookaheadDistance, distCheck) / stepSize;
+			var tickLimit = System.Math.Min(maxLookaheadDistance, distCheck) / StepSize;
 			var prevHt = 0;
 
 			// TODO: Make sure cell on map!!!
@@ -520,7 +520,7 @@ namespace OpenRA.Mods.Common.Projectiles
 
 				var ht = world.Map.Height[world.Map.CellContaining(posProbe)] * 512;
 
-				curDist += stepSize;
+				curDist += StepSize;
 				if (ht > predClfHgt)
 				{
 					predClfHgt = ht;

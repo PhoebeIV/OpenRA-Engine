@@ -103,6 +103,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		bool insufficientPlayerSpawns;
 		bool teamChat;
 		bool updateDiscordStatus = true;
+		bool resetOptionsButtonEnabled;
 		Dictionary<int, SpawnOccupant> spawnOccupants = new();
 
 		readonly string chatLineSound;
@@ -167,6 +168,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			Game.LobbyInfoChanged += UpdatePlayerList;
 			Game.LobbyInfoChanged += UpdateDiscordStatus;
 			Game.LobbyInfoChanged += UpdateSpawnOccupants;
+			Game.LobbyInfoChanged += UpdateOptions;
 			Game.BeforeGameStart += OnGameStart;
 			Game.ConnectionStateChanged += ConnectionStateChanged;
 
@@ -236,7 +238,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					var onSelect = new Action<string>(uid =>
 					{
 						// Don't select the same map again, and handle map becoming unavailable
-						if (uid == map.Uid || modData.MapCache[uid].Status != MapStatus.Available)
+						var status = modData.MapCache[uid].Status;
+						if (uid == map.Uid || (status != MapStatus.Available && status != MapStatus.DownloadAvailable))
 							return;
 
 						orderManager.IssueOrder(Order.Command("map " + uid));
@@ -250,6 +253,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					Ui.OpenWindow("MAPCHOOSER_PANEL", new WidgetArgs()
 					{
 						{ "initialMap", modData.MapCache.PickLastModifiedMap(MapVisibility.Lobby) ?? map.Uid },
+						{ "remoteMapPool", orderManager.ServerMapPool },
 						{ "initialTab", MapClassification.System },
 						{ "onExit", modData.MapCache.UpdateMaps },
 						{ "onSelect", Game.IsHost ? onSelect : null },
@@ -261,7 +265,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			var slotsButton = lobby.GetOrNull<DropDownButtonWidget>("SLOTS_DROPDOWNBUTTON");
 			if (slotsButton != null)
 			{
-				slotsButton.IsVisible = () => panel != PanelType.Servers;
+				slotsButton.IsVisible = () => panel != PanelType.Servers && panel != PanelType.Options;
 				slotsButton.IsDisabled = () => configurationDisabled() || panel != PanelType.Players ||
 					(orderManager.LobbyInfo.Slots.Values.All(s => !s.AllowBots) &&
 					!orderManager.LobbyInfo.Slots.Any(s => !s.Value.LockTeam && orderManager.LobbyInfo.ClientInSlot(s.Key) != null));
@@ -353,6 +357,14 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 					slotsButton.ShowDropDown("LABEL_DROPDOWN_TEMPLATE", 175, options, SetupItem);
 				};
+			}
+
+			var resetOptionsButton = lobby.GetOrNull<ButtonWidget>("RESET_OPTIONS_BUTTON");
+			if (resetOptionsButton != null)
+			{
+				resetOptionsButton.IsVisible = () => panel == PanelType.Options;
+				resetOptionsButton.IsDisabled = () => configurationDisabled() || !resetOptionsButtonEnabled;
+				resetOptionsButton.OnMouseDown = _ => orderManager.IssueOrder(Order.Command("reset_options"));
 			}
 
 			var optionsBin = Ui.LoadWidget("LOBBY_OPTIONS_BIN", lobby.Get("TOP_PANELS_ROOT"), new WidgetArgs()
@@ -906,6 +918,22 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			spawnOccupants = orderManager.LobbyInfo.Clients
 				.Where(c => c.SpawnPoint != 0)
 				.ToDictionary(c => c.SpawnPoint, c => new SpawnOccupant(c));
+		}
+
+		void UpdateOptions()
+		{
+			if (map == null || map.WorldActorInfo == null)
+				return;
+
+			var serverOptions = orderManager.LobbyInfo.GlobalSettings.LobbyOptions;
+			var mapOptions = map.PlayerActorInfo.TraitInfos<ILobbyOptions>()
+				.Concat(map.WorldActorInfo.TraitInfos<ILobbyOptions>())
+				.SelectMany(t => t.LobbyOptions(map))
+				.Where(o => o.IsVisible)
+				.OrderBy(o => o.DisplayOrder)
+				.ToArray();
+
+			resetOptionsButtonEnabled = mapOptions.Any(o => o.DefaultValue != serverOptions[o.Id].Value);
 		}
 
 		void OnGameStart()

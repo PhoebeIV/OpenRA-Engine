@@ -409,6 +409,7 @@ dropdownbutton-lobby-servers-bin-filters = Filter Games
 
 ## lobby.yaml
 dropdownbutton-bg-slots = Slot Admin
+button-bg-reset-options = Reset Defaults
 button-skirmish-tabs-players-tab = Players
 button-skirmish-tabs-options-tab = Options
 button-skirmish-tabs-music-tab = Music
@@ -499,6 +500,7 @@ label-update-notice-b = Download the latest version from www.openra.net
 ## mapchooser.yaml
 label-mapchooser-panel-title = Select Map
 button-bg-system-maps-tab = Official Maps
+button-bg-remote-maps-tab = Server Maps
 button-bg-user-maps-tab = Custom Maps
 label-filter-order-controls-desc = Filter:
 label-filter-order-controls-desc-joiner = in

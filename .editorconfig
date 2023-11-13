@@ -980,6 +980,9 @@ dotnet_diagnostic.RCS1058.severity = warning
 # Avoid locking on publicly accessible instance.
 dotnet_diagnostic.RCS1059.severity = warning
 
+# Merge 'if' with nested 'if'.
+dotnet_diagnostic.RCS1061.severity = warning
+
 # Remove empty 'finally' clause.
 dotnet_diagnostic.RCS1066.severity = warning
 
@@ -1001,6 +1004,9 @@ dotnet_diagnostic.RCS1080.severity = warning
 # Use coalesce expression instead of conditional expression.
 dotnet_diagnostic.RCS1084.severity = warning
 
+# Use --/++ operator instead of assignment.
+dotnet_diagnostic.RCS1089.severity = warning
+
 # Remove empty region.
 dotnet_diagnostic.RCS1091.severity = warning
 
@@ -1021,6 +1027,9 @@ dotnet_diagnostic.RCS1112.severity = warning
 
 # Use 'string.IsNullOrEmpty' method.
 dotnet_diagnostic.RCS1113.severity = warning
+
+# Mark local variable as const.
+dotnet_diagnostic.RCS1118.severity = warning
 
 # Bitwise operation on enum without Flags attribute.
 dotnet_diagnostic.RCS1130.severity = warning
@@ -1051,6 +1060,9 @@ dotnet_diagnostic.RCS1159.severity = warning
 
 # Unused type parameter.
 dotnet_diagnostic.RCS1164.severity = warning
+
+# Use read-only auto-implemented property.
+dotnet_diagnostic.RCS1170.severity = warning
 
 # Use 'is' operator instead of 'as' operator.
 dotnet_diagnostic.RCS1172.severity = warning
@@ -1084,6 +1096,9 @@ dotnet_diagnostic.RCS1199.severity = warning
 
 # Use EventArgs.Empty.
 dotnet_diagnostic.RCS1204.severity = warning
+
+# Order named arguments according to the order of parameters.
+dotnet_diagnostic.RCS1205.severity = warning
 
 # Order type parameter constraints.
 dotnet_diagnostic.RCS1209.severity = warning
@@ -1121,5 +1136,9 @@ dotnet_diagnostic.RCS1233.severity = warning
 # Optimize method call.
 dotnet_diagnostic.RCS1235.severity = warning
 
+# Use exception filter.
+dotnet_diagnostic.RCS1236.severity = warning
+
 # Use 'for' statement instead of 'while' statement.
 dotnet_diagnostic.RCS1239.severity = warning
+

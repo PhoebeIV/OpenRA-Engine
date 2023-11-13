@@ -29,6 +29,8 @@ namespace OpenRA.Mods.Common.Widgets
 		public int AnimationLength = 5;
 		public string RadarOnlineSound = null;
 		public string RadarOfflineSound = null;
+		public string SoundUp;
+		public string SoundDown;
 		public Func<bool> IsEnabled = () => true;
 		public Action AfterOpen = () => { };
 		public Action AfterClose = () => { };
@@ -62,9 +64,6 @@ namespace OpenRA.Mods.Common.Widgets
 		Shroud shroud;
 		PlayerRadarTerrain playerRadarTerrain;
 		Player currentPlayer;
-
-		public string SoundUp { get; private set; }
-		public string SoundDown { get; private set; }
 
 		[ObjectCreator.UseCtor]
 		public RadarWidget(World world, WorldRenderer worldRenderer)
@@ -474,7 +473,7 @@ namespace OpenRA.Mods.Common.Widgets
 
 			// Odd rows are shifted right by 1px
 			if (isRectangularIsometric && (uv.V & 1) == 1)
-				dx += 1;
+				dx++;
 
 			return new int2(mapRect.X + dx, mapRect.Y + dy);
 		}

@@ -233,7 +233,7 @@ namespace OpenRA
 				.ToList();
 
 			foreach (var uid in queryUids)
-				previews[uid].UpdateRemoteSearch(MapStatus.Searching, null);
+				previews[uid].UpdateRemoteSearch(MapStatus.Searching, null, null);
 
 			Task.Run(async () =>
 			{
@@ -251,13 +251,13 @@ namespace OpenRA
 
 						var yaml = MiniYaml.FromStream(result);
 						foreach (var kv in yaml)
-							previews[kv.Key].UpdateRemoteSearch(MapStatus.DownloadAvailable, kv.Value, mapDetailsReceived);
+							previews[kv.Key].UpdateRemoteSearch(MapStatus.DownloadAvailable, kv.Value, modData.Manifest.MapCompatibility, mapDetailsReceived);
 
 						foreach (var uid in batchUids)
 						{
 							var p = previews[uid];
 							if (p.Status != MapStatus.DownloadAvailable)
-								p.UpdateRemoteSearch(MapStatus.Unavailable, null);
+								p.UpdateRemoteSearch(MapStatus.Unavailable, null, null);
 						}
 					}
 					catch (Exception e)
@@ -269,7 +269,7 @@ namespace OpenRA
 						foreach (var uid in batchUids)
 						{
 							var p = previews[uid];
-							p.UpdateRemoteSearch(MapStatus.Unavailable, null);
+							p.UpdateRemoteSearch(MapStatus.Unavailable, null, null);
 							mapQueryFailed?.Invoke(p);
 						}
 					}
@@ -282,11 +282,11 @@ namespace OpenRA
 			Log.Write("debug", "MapCache.LoadAsyncInternal started");
 
 			// Milliseconds to wait on one loop when nothing to do
-			var emptyDelay = 50;
+			const int EmptyDelay = 50;
 
 			// Keep the thread alive for at least 5 seconds after the last minimap generation
-			var maxKeepAlive = 5000 / emptyDelay;
-			var keepAlive = maxKeepAlive;
+			const int MaxKeepAlive = 5000 / EmptyDelay;
+			var keepAlive = MaxKeepAlive;
 
 			while (true)
 			{
@@ -306,11 +306,11 @@ namespace OpenRA
 
 				if (todo.Count == 0)
 				{
-					Thread.Sleep(emptyDelay);
+					Thread.Sleep(EmptyDelay);
 					continue;
 				}
 				else
-					keepAlive = maxKeepAlive;
+					keepAlive = MaxKeepAlive;
 
 				// Render the minimap into the shared sheet
 				foreach (var p in todo)

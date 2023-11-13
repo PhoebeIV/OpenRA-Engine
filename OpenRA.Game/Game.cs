@@ -223,6 +223,10 @@ namespace OpenRA
 			//   Much better to clean up now then to drop frames during gameplay for GC pauses.
 			GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
 			GC.Collect();
+
+			// PostLoadComplete is designed for anything that should trigger at the very end of loading.
+			// e.g. audio notifications that the game is starting.
+			OrderManager.World.PostLoadComplete(worldRenderer);
 		}
 
 		public static void RestartGame()
@@ -602,7 +606,10 @@ namespace OpenRA
 
 			if (orderManager.LastTickTime.ShouldAdvance(tick))
 			{
-				using (new PerfSample("tick_time"))
+				if (orderManager.GameStarted && orderManager.LocalFrameNumber == 0)
+					PerfHistory.Reset(); // Remove history that occurred whilst the new game was loading.
+
+				using (var sample = new PerfSample("tick_time"))
 				{
 					orderManager.LastTickTime.AdvanceTickTime(tick);
 
@@ -611,7 +618,11 @@ namespace OpenRA
 					Sync.RunUnsynced(world, orderManager.TickImmediate);
 
 					if (world == null)
+					{
+						if (orderManager.GameStarted)
+							PerfHistory.Reset(); // Remove old history when a new game starts.
 						return;
+					}
 
 					if (orderManager.TryTick())
 					{
