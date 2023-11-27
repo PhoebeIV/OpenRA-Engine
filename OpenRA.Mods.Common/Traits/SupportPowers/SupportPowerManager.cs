@@ -59,9 +59,9 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				var key = MakeKey(t);
 
-				if (!Powers.ContainsKey(key))
+				if (!Powers.TryGetValue(key, out var spi))
 				{
-					Powers.Add(key, t.CreateInstance(key, this));
+					Powers.Add(key, spi = t.CreateInstance(key, this));
 
 					if (t.Info.Prerequisites.Length > 0)
 					{
@@ -70,7 +70,7 @@ namespace OpenRA.Mods.Common.Traits
 					}
 				}
 
-				Powers[key].Instances.Add(t);
+				spi.Instances.Add(t);
 			}
 		}
 
@@ -197,7 +197,7 @@ namespace OpenRA.Mods.Common.Traits
 			if (!Active)
 				return;
 
-			var power = Instances.First();
+			var power = Instances[0];
 			if (Manager.DevMode.FastCharge && remainingSubTicks > 2500)
 				remainingSubTicks = 2500;
 

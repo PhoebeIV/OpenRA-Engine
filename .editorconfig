@@ -70,6 +70,10 @@ csharp_style_prefer_top_level_statements = false
 dotnet_diagnostic.IDE0210.severity = warning
 dotnet_diagnostic.IDE0211.severity = warning
 
+# IDE0290 Use primary constructor
+#csharp_style_prefer_primary_constructors = true
+dotnet_diagnostic.IDE0200.severity = silent # Requires C# 12
+
 ## Expression-bodied members
 
 # IDE0021 Use expression body for constructors
@@ -427,10 +431,7 @@ dotnet_diagnostic.IDE0077.severity = warning
 
 ### Formatting Rules (IDE0055)
 ### https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0055
-
-# We may eventually wish to enforce this rule, however some existing formatting conflicts with the rule despite being reasonable.
-# Additionally, the rule is buggy and likes to report spuriously after invoking Format Document in the IDE.
-dotnet_diagnostic.IDE0055.severity = none
+dotnet_diagnostic.IDE0055.severity = warning
 
 #dotnet_sort_system_directives_first = true
 #dotnet_separate_import_directive_groups = false
@@ -448,7 +449,7 @@ dotnet_diagnostic.IDE0055.severity = none
 #csharp_indent_labels = one_less_than_current
 #csharp_indent_block_contents = true
 #csharp_indent_braces = false
-#csharp_indent_case_contents_when_block = true
+csharp_indent_case_contents_when_block = false
 
 #csharp_space_after_cast = false
 #csharp_space_after_keywords_in_control_flow_statements = true
@@ -638,6 +639,7 @@ dotnet_diagnostic.SA1649.severity = none # FileNameMustMatchTypeName
 #### https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/
 
 # Below we enable specific rules by setting severity to warning.
+# Rules are disabled by setting severity to silent (to still allow use in IDE) or none (to prevent all use).
 # Rules are listed below with any options available.
 # Options are commented out if they match the defaults.
 
@@ -723,6 +725,9 @@ dotnet_diagnostic.CA1417.severity = warning
 
 # Use 'nameof' in place of string.
 dotnet_diagnostic.CA1507.severity = warning
+
+# Avoid redundant length argument.
+dotnet_diagnostic.CA1514.severity = suggestion # TODO: Change to warning once using .NET 8 or later.
 
 ### Naming Rules
 ### https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/naming-warnings
@@ -854,6 +859,23 @@ dotnet_diagnostic.CA1858.severity = warning
 # Avoid using 'Enumerable.Any()' extension method.
 dotnet_diagnostic.CA1860.severity = warning
 
+# Prefer the 'IDictionary.TryAdd(TKey, TValue)' method.
+dotnet_diagnostic.CA1864.severity = suggestion # TODO: Change to warning once using .NET 8 or later.
+
+# Use 'string.Method(char)' instead of 'string.Method(string)' for string with single char.
+dotnet_diagnostic.CA1865.severity = suggestion # TODO: Change to warning once using .NET 8 or later.
+dotnet_diagnostic.CA1866.severity = suggestion # TODO: Change to warning once using .NET 8 or later.
+dotnet_diagnostic.CA1867.severity = suggestion # TODO: Change to warning once using .NET 8 or later.
+
+# Unnecessary call to 'Contains' for sets.
+dotnet_diagnostic.CA1868.severity = suggestion # TODO: Change to warning once using .NET 8 or later.
+
+# Cache and reuse 'JsonSerializerOptions' instances.
+dotnet_diagnostic.CA1869.severity = suggestion # TODO: Change to warning once using .NET 8 or later.
+
+# Use a cached 'SearchValues' instance.
+dotnet_diagnostic.CA1870.severity = suggestion # TODO: Change to warning once using .NET 8 or later.
+
 ### Reliability Rules
 ### https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/reliability-warnings
 
@@ -899,6 +921,9 @@ dotnet_diagnostic.CA2207.severity = warning
 # Instantiate argument exceptions correctly.
 dotnet_diagnostic.CA2208.severity = warning
 
+# Non-constant fields should not be visible.
+dotnet_diagnostic.CA2211.severity = silent
+
 # Dispose methods should call base class dispose.
 dotnet_diagnostic.CA2215.severity = warning
 
@@ -913,7 +938,7 @@ dotnet_diagnostic.CA2231.severity = warning
 
 # Provide correct arguments to formatting methods.
 #dotnet_code_quality.CA2241.additional_string_formatting_methods =
-dotnet_code_quality.CA2241.try_determine_additional_string_formatting_methods_automatically = true
+#dotnet_code_quality.CA2241.try_determine_additional_string_formatting_methods_automatically = false
 dotnet_diagnostic.CA2241.severity = warning
 
 # Test for NaN correctly.
@@ -997,6 +1022,9 @@ dotnet_diagnostic.RCS1072.severity = warning
 
 # Remove redundant constructor.
 dotnet_diagnostic.RCS1074.severity = warning
+
+# Optimize LINQ method call.
+dotnet_diagnostic.RCS1077.severity = warning
 
 # Use 'Count' property instead of 'Any' method.
 dotnet_diagnostic.RCS1080.severity = warning
@@ -1142,3 +1170,5 @@ dotnet_diagnostic.RCS1236.severity = warning
 # Use 'for' statement instead of 'while' statement.
 dotnet_diagnostic.RCS1239.severity = warning
 
+# Use element access.
+dotnet_diagnostic.RCS1246.severity = warning

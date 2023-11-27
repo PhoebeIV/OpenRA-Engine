@@ -40,8 +40,9 @@ namespace OpenRA.Server
 	public enum ServerType
 	{
 		Local = 0,
-		Multiplayer = 1,
-		Dedicated = 2
+		Skirmish = 1,
+		Multiplayer = 2,
+		Dedicated = 3
 	}
 
 	public sealed class Server
@@ -117,6 +118,7 @@ namespace OpenRA.Server
 
 		public readonly MersenneTwister Random = new();
 		public readonly ServerType Type;
+		public bool IsMultiplayer => Type == ServerType.Dedicated || Type == ServerType.Multiplayer;
 
 		public readonly List<Connection> Conns = new();
 
@@ -280,7 +282,8 @@ namespace OpenRA.Server
 								}
 							}
 						}
-					}) { Name = $"Connection listener ({listener.LocalEndpoint})", IsBackground = true }.Start();
+					})
+					{ Name = $"Connection listener ({listener.LocalEndpoint})", IsBackground = true }.Start();
 				}
 				catch (SocketException ex)
 				{
@@ -303,10 +306,10 @@ namespace OpenRA.Server
 
 			randomSeed = (int)DateTime.Now.ToBinary();
 
-			if (type != ServerType.Local && settings.EnableGeoIP)
+			if (IsMultiplayer && settings.EnableGeoIP)
 				GeoIP.Initialize();
 
-			if (type != ServerType.Local)
+			if (IsMultiplayer)
 				Nat.TryForwardPort(Settings.ListenPort, Settings.ListenPort);
 
 			foreach (var trait in modData.Manifest.ServerTraits)
@@ -380,7 +383,7 @@ namespace OpenRA.Server
 					if (State == ServerState.ShuttingDown)
 					{
 						EndGame();
-						if (type != ServerType.Local)
+						if (IsMultiplayer)
 							Nat.TryRemovePortForward();
 						break;
 					}
@@ -488,7 +491,7 @@ namespace OpenRA.Server
 				{
 					Name = OpenRA.Settings.SanitizedPlayerName(handshake.Client.Name),
 					IPAddress = ipAddress.ToString(),
-					AnonymizedIPAddress = Type != ServerType.Local && Settings.ShareAnonymizedIPs ? Session.AnonymizeIP(ipAddress) : null,
+					AnonymizedIPAddress = IsMultiplayer && Settings.ShareAnonymizedIPs ? Session.AnonymizeIP(ipAddress) : null,
 					Location = GeoIP.LookupCountry(ipAddress),
 					Index = newConn.PlayerIndex,
 					PreferredColor = handshake.Client.PreferredColor,
@@ -600,7 +603,7 @@ namespace OpenRA.Server
 					}
 				}
 
-				if (Type == ServerType.Local)
+				if (!IsMultiplayer)
 				{
 					// Local servers can only be joined by the local client, so we can trust their identity without validation
 					client.Fingerprint = handshake.Fingerprint;
@@ -990,70 +993,39 @@ namespace OpenRA.Server
 				switch (o.OrderString)
 				{
 					case "Command":
+					{
+						if (!InterpretCommand(o.TargetString, conn))
 						{
-							var handledBy = serverTraits.WithInterface<IInterpretCommand>()
-								.FirstOrDefault(t => t.InterpretCommand(this, conn, GetClient(conn), o.TargetString));
-
-							if (handledBy == null)
-							{
-								Log.Write("server", $"Unknown server command: {o.TargetString}");
-								SendLocalizedMessageTo(conn, UnknownServerCommand, Translation.Arguments("command", o.TargetString));
-							}
-
-							break;
+							Log.Write("server", $"Unknown server command: {o.TargetString}");
+							SendLocalizedMessageTo(conn, UnknownServerCommand, Translation.Arguments("command", o.TargetString));
 						}
+
+						break;
+					}
 
 					case "Chat":
-						{
-							if (Type == ServerType.Local || !playerMessageTracker.IsPlayerAtFloodLimit(conn))
-								DispatchOrdersToClients(conn, 0, o.Serialize());
+					{
+						if (!IsMultiplayer || !playerMessageTracker.IsPlayerAtFloodLimit(conn))
+							DispatchOrdersToClients(conn, 0, o.Serialize());
 
-							break;
-						}
+						break;
+					}
 
 					case "GameSaveTraitData":
+					{
+						if (GameSave != null)
 						{
-							if (GameSave != null)
-							{
-								var data = MiniYaml.FromString(o.TargetString)[0];
-								GameSave.AddTraitData(OpenRA.Exts.ParseInt32Invariant(data.Key), data.Value);
-							}
-
-							break;
+							var data = MiniYaml.FromString(o.TargetString)[0];
+							GameSave.AddTraitData(OpenRA.Exts.ParseInt32Invariant(data.Key), data.Value);
 						}
+
+						break;
+					}
 
 					case "CreateGameSave":
+					{
+						if (GameSave != null)
 						{
-							if (GameSave != null)
-							{
-								// Sanitize potentially malicious input
-								var filename = o.TargetString;
-								var invalidIndex = -1;
-								var invalidChars = Path.GetInvalidFileNameChars();
-								while ((invalidIndex = filename.IndexOfAny(invalidChars)) != -1)
-									filename = filename.Remove(invalidIndex, 1);
-
-								var baseSavePath = Path.Combine(
-									Platform.SupportDir,
-									"Saves",
-									ModData.Manifest.Id,
-									ModData.Manifest.Metadata.Version);
-
-								if (!Directory.Exists(baseSavePath))
-									Directory.CreateDirectory(baseSavePath);
-
-								GameSave.Save(Path.Combine(baseSavePath, filename));
-								DispatchServerOrdersToClients(Order.FromTargetString("GameSaved", filename, true));
-							}
-
-							break;
-						}
-
-					case "LoadGameSave":
-						{
-							if (Type == ServerType.Dedicated || State >= ServerState.GameStarted)
-								break;
-
 							// Sanitize potentially malicious input
 							var filename = o.TargetString;
 							var invalidIndex = -1;
@@ -1061,62 +1033,90 @@ namespace OpenRA.Server
 							while ((invalidIndex = filename.IndexOfAny(invalidChars)) != -1)
 								filename = filename.Remove(invalidIndex, 1);
 
-							var savePath = Path.Combine(
+							var baseSavePath = Path.Combine(
 								Platform.SupportDir,
 								"Saves",
 								ModData.Manifest.Id,
-								ModData.Manifest.Metadata.Version,
-								filename);
+								ModData.Manifest.Metadata.Version);
 
-							GameSave = new GameSave(savePath);
-							LobbyInfo.GlobalSettings = GameSave.GlobalSettings;
-							LobbyInfo.Slots = GameSave.Slots;
+							if (!Directory.Exists(baseSavePath))
+								Directory.CreateDirectory(baseSavePath);
 
-							// Reassign clients to slots
-							//  - Bot ordering is preserved
-							//  - Humans are assigned on a first-come-first-serve basis
-							//  - Leftover humans become spectators
-
-							// Start by removing all bots and assigning all players as spectators
-							foreach (var c in LobbyInfo.Clients)
-							{
-								if (c.Bot != null)
-									LobbyInfo.Clients.Remove(c);
-								else
-									c.Slot = null;
-							}
-
-							// Rebuild/remap the saved client state
-							// TODO: Multiplayer saves should leave all humans as spectators so they can manually pick slots
-							var adminClientIndex = LobbyInfo.Clients.First(c => c.IsAdmin).Index;
-							foreach (var kv in GameSave.SlotClients)
-							{
-								if (kv.Value.Bot != null)
-								{
-									var bot = new Session.Client()
-									{
-										Index = ChooseFreePlayerIndex(),
-										State = Session.ClientState.NotReady,
-										BotControllerClientIndex = adminClientIndex
-									};
-
-									kv.Value.ApplyTo(bot);
-									LobbyInfo.Clients.Add(bot);
-								}
-								else
-								{
-									// This will throw if the server doesn't have enough human clients to fill all player slots
-									// See TODO above - this isn't a problem in practice because MP saves won't use this
-									var client = LobbyInfo.Clients.First(c => c.Slot == null);
-									kv.Value.ApplyTo(client);
-								}
-							}
-
-							SyncLobbyInfo();
-							SyncLobbyClients();
-
-							break;
+							GameSave.Save(Path.Combine(baseSavePath, filename));
+							DispatchServerOrdersToClients(Order.FromTargetString("GameSaved", filename, true));
 						}
+
+						break;
+					}
+
+					case "LoadGameSave":
+					{
+						if (Type == ServerType.Dedicated || State >= ServerState.GameStarted)
+							break;
+
+						// Sanitize potentially malicious input
+						var filename = o.TargetString;
+						var invalidIndex = -1;
+						var invalidChars = Path.GetInvalidFileNameChars();
+						while ((invalidIndex = filename.IndexOfAny(invalidChars)) != -1)
+							filename = filename.Remove(invalidIndex, 1);
+
+						var savePath = Path.Combine(
+							Platform.SupportDir,
+							"Saves",
+							ModData.Manifest.Id,
+							ModData.Manifest.Metadata.Version,
+							filename);
+
+						GameSave = new GameSave(savePath);
+						LobbyInfo.GlobalSettings = GameSave.GlobalSettings;
+						LobbyInfo.Slots = GameSave.Slots;
+
+						// Reassign clients to slots
+						//  - Bot ordering is preserved
+						//  - Humans are assigned on a first-come-first-serve basis
+						//  - Leftover humans become spectators
+
+						// Start by removing all bots and assigning all players as spectators
+						foreach (var c in LobbyInfo.Clients)
+						{
+							if (c.Bot != null)
+								LobbyInfo.Clients.Remove(c);
+							else
+								c.Slot = null;
+						}
+
+						// Rebuild/remap the saved client state
+						// TODO: Multiplayer saves should leave all humans as spectators so they can manually pick slots
+						var adminClientIndex = LobbyInfo.Clients.First(c => c.IsAdmin).Index;
+						foreach (var kv in GameSave.SlotClients)
+						{
+							if (kv.Value.Bot != null)
+							{
+								var bot = new Session.Client()
+								{
+									Index = ChooseFreePlayerIndex(),
+									State = Session.ClientState.NotReady,
+									BotControllerClientIndex = adminClientIndex
+								};
+
+								kv.Value.ApplyTo(bot);
+								LobbyInfo.Clients.Add(bot);
+							}
+							else
+							{
+								// This will throw if the server doesn't have enough human clients to fill all player slots
+								// See TODO above - this isn't a problem in practice because MP saves won't use this
+								var client = LobbyInfo.Clients.First(c => c.Slot == null);
+								kv.Value.ApplyTo(client);
+							}
+						}
+
+						SyncLobbyInfo();
+						SyncLobbyClients();
+
+						break;
+					}
 				}
 			}
 		}
@@ -1251,7 +1251,7 @@ namespace OpenRA.Server
 			lock (LobbyInfo)
 			{
 				// TODO: Only need to sync the specific client that has changed to avoid conflicts!
-				var clientData = LobbyInfo.Clients.Select(client => client.Serialize()).ToList();
+				var clientData = LobbyInfo.Clients.ConvertAll(client => client.Serialize());
 
 				DispatchServerOrdersToClients(Order.FromTargetString("SyncLobbyClients", clientData.WriteToString(), true));
 
@@ -1351,7 +1351,7 @@ namespace OpenRA.Server
 
 				State = ServerState.GameStarted;
 
-				if (Type != ServerType.Local)
+				if (IsMultiplayer)
 					OrderLatency = gameSpeed.OrderLatency;
 
 				if (GameSave == null && LobbyInfo.GlobalSettings.GameSavesEnabled)
@@ -1365,8 +1365,8 @@ namespace OpenRA.Server
 					{
 						startGameData = new List<MiniYamlNode>()
 						{
-							new MiniYamlNode("SaveLastOrdersFrame", GameSave.LastOrdersFrame.ToStringInvariant()),
-							new MiniYamlNode("SaveSyncFrame", GameSave.LastSyncFrame.ToStringInvariant())
+							new("SaveLastOrdersFrame", GameSave.LastOrdersFrame.ToStringInvariant()),
+							new("SaveSyncFrame", GameSave.LastSyncFrame.ToStringInvariant())
 						}.WriteToString();
 					}
 				}
@@ -1409,6 +1409,15 @@ namespace OpenRA.Server
 					}
 				}
 			}
+		}
+
+		public bool InterpretCommand(string command, Connection conn)
+		{
+			foreach (var t in serverTraits.WithInterface<IInterpretCommand>())
+				if (t.InterpretCommand(this, conn, GetClient(conn), command))
+					return true;
+
+			return false;
 		}
 
 		public ConnectionTarget GetEndpointForLocalConnection()
@@ -1504,9 +1513,9 @@ namespace OpenRA.Server
 			readonly int[] pingHistory;
 
 			// TODO: future net code changes
-			#pragma warning disable IDE0052
+#pragma warning disable IDE0052
 			readonly byte queueLength;
-			#pragma warning restore IDE0052
+#pragma warning restore IDE0052
 
 			public ConnectionPingEvent(Connection connection, int[] pingHistory, byte queueLength)
 			{

@@ -37,7 +37,7 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 		{
 			// Keep a resolved copy of the sequences so we can account for values imported through inheritance or Defaults.
 			// This will be modified during processing, so take a deep copy to avoid side-effects on other update rules.
-			this.resolvedImagesNodes = MiniYaml.FromString(resolvedImagesNodes.WriteToString()).Select(n => new MiniYamlNodeBuilder(n)).ToList();
+			this.resolvedImagesNodes = MiniYaml.FromString(resolvedImagesNodes.WriteToString()).ConvertAll(n => new MiniYamlNodeBuilder(n));
 
 			var requiredMetadata = new HashSet<string>();
 			foreach (var imageNode in resolvedImagesNodes)
@@ -56,9 +56,10 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 
 			if (requiredMetadata.Count != 0)
 			{
-				yield return $"The ExplicitSequenceFilenames rule requires {requiredMetadata.JoinWith(", ")}\n" +
-				             "to be defined under the SpriteSequenceFormat definition in mod.yaml.\n" +
-				             "Add these definitions back and run the update rule again.";
+				yield return
+					$"The ExplicitSequenceFilenames rule requires {requiredMetadata.JoinWith(", ")}\n" +
+					"to be defined under the SpriteSequenceFormat definition in mod.yaml.\n" +
+					"Add these definitions back and run the update rule again.";
 				disabled = true;
 			}
 		}
@@ -103,29 +104,29 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 							fromBackup = true;
 							tilesetExtensionsNode = new List<MiniYamlNodeBuilder>()
 							{
-								new MiniYamlNodeBuilder("TEMPERAT", ".tem"),
-								new MiniYamlNodeBuilder("SNOW", ".sno"),
-								new MiniYamlNodeBuilder("INTERIOR", ".int"),
-								new MiniYamlNodeBuilder("DESERT", ".des"),
-								new MiniYamlNodeBuilder("JUNGLE", ".jun"),
+								new("TEMPERAT", ".tem"),
+								new("SNOW", ".sno"),
+								new("INTERIOR", ".int"),
+								new("DESERT", ".des"),
+								new("JUNGLE", ".jun"),
 							};
 							break;
 						case "ra":
 							fromBackup = true;
 							tilesetExtensionsNode = new List<MiniYamlNodeBuilder>()
 							{
-								new MiniYamlNodeBuilder("TEMPERAT", ".tem"),
-								new MiniYamlNodeBuilder("SNOW", ".sno"),
-								new MiniYamlNodeBuilder("INTERIOR", ".int"),
-								new MiniYamlNodeBuilder("DESERT", ".des"),
+								new("TEMPERAT", ".tem"),
+								new("SNOW", ".sno"),
+								new("INTERIOR", ".int"),
+								new("DESERT", ".des"),
 							};
 							break;
 						case "ts":
 							fromBackup = true;
 							tilesetExtensionsNode = new List<MiniYamlNodeBuilder>()
 							{
-								new MiniYamlNodeBuilder("TEMPERATE", ".tem"),
-								new MiniYamlNodeBuilder("SNOW", ".sno"),
+								new("TEMPERATE", ".tem"),
+								new("SNOW", ".sno"),
 							};
 							break;
 					}
@@ -148,8 +149,8 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 					fromBackup = true;
 					tilesetCodesNode = new List<MiniYamlNodeBuilder>()
 					{
-						new MiniYamlNodeBuilder("TEMPERATE", "t"),
-						new MiniYamlNodeBuilder("SNOW", "a"),
+						new("TEMPERATE", "t"),
+						new("SNOW", "a"),
 					};
 				}
 
@@ -212,7 +213,7 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 					{
 						resolvedDefaultsNode.Value.Nodes.Select(n => n.Build()).ToArray(),
 						resolvedSequenceNode.Value.Nodes.Select(n => n.Build()).ToArray()
-					}).Select(n => new MiniYamlNodeBuilder(n)).ToList();
+					}).ConvertAll(n => new MiniYamlNodeBuilder(n));
 					resolvedSequenceNode.Value.Value ??= resolvedDefaultsNode.Value.Value;
 				}
 			}
@@ -457,8 +458,7 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 
 					var overrideFilename = filename;
 					if (useTilesetCode)
-						overrideFilename = filename[..1] + tilesetCodes[sequenceTileset] +
-						                   filename[2..];
+						overrideFilename = filename[..1] + tilesetCodes[sequenceTileset] + filename[2..];
 
 					if (addExtension)
 						overrideFilename += useTilesetExtension ? tilesetExtensions[sequenceTileset] : defaultSpriteExtension;

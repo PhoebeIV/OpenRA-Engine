@@ -17,14 +17,14 @@ using OpenRA.FileSystem;
 
 namespace OpenRA.Mods.Common.UpdateRules
 {
-	using YamlFileSet = List<(IReadWritePackage, string, List<MiniYamlNodeBuilder>)>;
+	using YamlFileSet = List<(IReadWritePackage Package, string File, List<MiniYamlNodeBuilder> Nodes)>;
 
 	public static class UpdateUtils
 	{
 		/// <summary>
 		/// Loads a YamlFileSet from a list of mod files.
 		/// </summary>
-		static YamlFileSet LoadModYaml(ModData modData, IEnumerable<string> files)
+		public static YamlFileSet LoadModYaml(ModData modData, IEnumerable<string> files)
 		{
 			var yaml = new YamlFileSet();
 			foreach (var filename in files)
@@ -35,7 +35,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 					continue;
 				}
 
-				yaml.Add(((IReadWritePackage)package, name, MiniYaml.FromStream(package.GetStream(name), name, false).Select(n => new MiniYamlNodeBuilder(n)).ToList()));
+				yaml.Add(((IReadWritePackage)package, name, MiniYaml.FromStream(package.GetStream(name), name, false).ConvertAll(n => new MiniYamlNodeBuilder(n))));
 			}
 
 			return yaml;
@@ -44,7 +44,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 		/// <summary>
 		/// Loads a YamlFileSet containing any external yaml definitions referenced by a map yaml block.
 		/// </summary>
-		static YamlFileSet LoadExternalMapYaml(ModData modData, MiniYamlBuilder yaml, HashSet<string> externalFilenames)
+		public static YamlFileSet LoadExternalMapYaml(ModData modData, MiniYamlBuilder yaml, HashSet<string> externalFilenames)
 		{
 			return FieldLoader.GetValue<string[]>("value", yaml.Value)
 				.Where(f => f.Contains('|'))
@@ -56,7 +56,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 		/// Loads a YamlFileSet containing any internal definitions yaml referenced by a map yaml block.
 		/// External references or internal references to missing files are ignored.
 		/// </summary>
-		static YamlFileSet LoadInternalMapYaml(ModData modData, IReadWritePackage mapPackage, MiniYamlBuilder yaml, HashSet<string> externalFilenames)
+		public static YamlFileSet LoadInternalMapYaml(ModData modData, IReadWritePackage mapPackage, MiniYamlBuilder yaml, HashSet<string> externalFilenames)
 		{
 			var fileSet = new YamlFileSet()
 			{
@@ -68,7 +68,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 			{
 				// Ignore any files that aren't in the map bundle
 				if (!filename.Contains('|') && mapPackage.Contains(filename))
-					fileSet.Add((mapPackage, filename, MiniYaml.FromStream(mapPackage.GetStream(filename), filename, false).Select(n => new MiniYamlNodeBuilder(n)).ToList()));
+					fileSet.Add((mapPackage, filename, MiniYaml.FromStream(mapPackage.GetStream(filename), filename, false).ConvertAll(n => new MiniYamlNodeBuilder(n))));
 				else if (modData.ModFiles.Exists(filename))
 					externalFilenames.Add(filename);
 			}
@@ -177,12 +177,12 @@ namespace OpenRA.Mods.Common.UpdateRules
 			}
 
 			if (mapNode != null && mapNode.Nodes.Count > 0)
-				yaml.Add(mapNode.Nodes.Select(n => n.Build()).ToList());
+				yaml.Add(mapNode.Nodes.ConvertAll(n => n.Build()));
 
-			return MiniYaml.Merge(yaml).Select(n => new MiniYamlNodeBuilder(n)).ToList();
+			return MiniYaml.Merge(yaml).ConvertAll(n => new MiniYamlNodeBuilder(n));
 		}
 
-		static IEnumerable<string> FilterExternalModFiles(ModData modData, IEnumerable<string> files, HashSet<string> externalFilenames)
+		public static IEnumerable<string> FilterExternalModFiles(ModData modData, IEnumerable<string> files, HashSet<string> externalFilenames)
 		{
 			foreach (var f in files)
 			{
@@ -219,19 +219,19 @@ namespace OpenRA.Mods.Common.UpdateRules
 					var mapRulesNode = yaml.NodeWithKeyOrDefault("Rules");
 					if (mapRulesNode != null)
 						foreach (var f in LoadExternalMapYaml(modData, mapRulesNode.Value, externalFilenames))
-							if (!modRules.Any(m => m.Item1 == f.Item1 && m.Item2 == f.Item2))
+							if (!modRules.Any(m => m.Package == f.Package && m.File == f.File))
 								modRules.Add(f);
 
 					var mapWeaponsNode = yaml.NodeWithKeyOrDefault("Weapons");
 					if (mapWeaponsNode != null)
 						foreach (var f in LoadExternalMapYaml(modData, mapWeaponsNode.Value, externalFilenames))
-							if (!modWeapons.Any(m => m.Item1 == f.Item1 && m.Item2 == f.Item2))
+							if (!modWeapons.Any(m => m.Package == f.Package && m.File == f.File))
 								modWeapons.Add(f);
 
 					var mapSequencesNode = yaml.NodeWithKeyOrDefault("Sequences");
 					if (mapSequencesNode != null)
 						foreach (var f in LoadExternalMapYaml(modData, mapSequencesNode.Value, externalFilenames))
-							if (!modSequences.Any(m => m.Item1 == f.Item1 && m.Item2 == f.Item2))
+							if (!modSequences.Any(m => m.Package == f.Package && m.File == f.File))
 								modSequences.Add(f);
 				}
 			}
@@ -241,7 +241,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 			if (rule is IBeforeUpdateActors beforeActors)
 			{
 				var resolvedActors = MiniYaml.Load(modData.DefaultFileSystem, modData.Manifest.Rules, null)
-					.Select(n => new MiniYamlNodeBuilder(n)).ToList();
+					.ConvertAll(n => new MiniYamlNodeBuilder(n));
 				manualSteps.AddRange(beforeActors.BeforeUpdateActors(modData, resolvedActors));
 			}
 
@@ -250,7 +250,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 			if (rule is IBeforeUpdateWeapons beforeWeapons)
 			{
 				var resolvedWeapons = MiniYaml.Load(modData.DefaultFileSystem, modData.Manifest.Weapons, null)
-					.Select(n => new MiniYamlNodeBuilder(n)).ToList();
+					.ConvertAll(n => new MiniYamlNodeBuilder(n));
 				manualSteps.AddRange(beforeWeapons.BeforeUpdateWeapons(modData, resolvedWeapons));
 			}
 
@@ -259,7 +259,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 			if (rule is IBeforeUpdateSequences beforeSequences)
 			{
 				var resolvedImages = MiniYaml.Load(modData.DefaultFileSystem, modData.Manifest.Sequences, null)
-					.Select(n => new MiniYamlNodeBuilder(n)).ToList();
+					.ConvertAll(n => new MiniYamlNodeBuilder(n));
 				manualSteps.AddRange(beforeSequences.BeforeUpdateSequences(modData, resolvedImages));
 			}
 
@@ -298,8 +298,8 @@ namespace OpenRA.Mods.Common.UpdateRules
 			if (transform == null)
 				yield break;
 
-			foreach (var file in files)
-				foreach (var node in file.Item3)
+			foreach (var (_, _, nodes) in files)
+				foreach (var node in nodes)
 					if (node.Key != null)
 						foreach (var manualStep in ApplyChromeTransformInner(modData, node, transform))
 							yield return manualStep;
@@ -310,8 +310,8 @@ namespace OpenRA.Mods.Common.UpdateRules
 			if (transform == null)
 				yield break;
 
-			foreach (var file in files)
-				foreach (var node in file.Item3)
+			foreach (var (_, _, nodes) in files)
+				foreach (var node in nodes)
 					if (node.Key != null)
 						foreach (var manualStep in transform(modData, node))
 							yield return manualStep;
@@ -322,20 +322,31 @@ namespace OpenRA.Mods.Common.UpdateRules
 			var prefix = string.Concat(Enumerable.Repeat("   ", indent));
 			return string.Join("\n", messages.Select(m => prefix + $" {separator} {m.Replace("\n", "\n   " + prefix)}"));
 		}
+
+		public static bool IsAlreadyTranslated(string translation)
+		{
+			if (translation == translation.ToLowerInvariant() && translation.Any(c => c == '-') && translation.All(c => c != ' '))
+			{
+				Console.WriteLine($"Skipping {translation} because it is already translated.");
+				return true;
+			}
+
+			return false;
+		}
 	}
 
 	public static class UpdateExtensions
 	{
 		public static void Save(this YamlFileSet files)
 		{
-			foreach (var file in files)
+			foreach (var (package, file, nodes) in files)
 			{
-				if (file.Item1 == null)
+				if (package == null)
 					continue;
 
-				var textData = Encoding.UTF8.GetBytes(file.Item3.WriteToString());
-				if (!Enumerable.SequenceEqual(textData, file.Item1.GetStream(file.Item2).ReadAllBytes()))
-					file.Item1.Update(file.Item2, textData);
+				var textData = Encoding.UTF8.GetBytes(nodes.WriteToString());
+				if (!Enumerable.SequenceEqual(textData, package.GetStream(file).ReadAllBytes()))
+					package.Update(file, textData);
 			}
 		}
 
@@ -349,7 +360,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 		public static void RenameKey(this MiniYamlNodeBuilder node, string newKey, bool preserveSuffix = true, bool includeRemovals = true)
 		{
 			var prefix = includeRemovals && node.IsRemoval() ? "-" : "";
-			var split = node.Key.IndexOf("@", StringComparison.Ordinal);
+			var split = node.Key.IndexOf('@');
 			if (preserveSuffix && split > -1)
 				node.Key = prefix + newKey + node.Key[split..];
 			else

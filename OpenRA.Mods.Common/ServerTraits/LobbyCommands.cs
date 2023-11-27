@@ -361,13 +361,11 @@ namespace OpenRA.Mods.Common.Server
 		{
 			lock (server.LobbyInfo)
 			{
-				if (!server.LobbyInfo.Slots.ContainsKey(s))
+				if (!server.LobbyInfo.Slots.TryGetValue(s, out var slot))
 				{
 					Log.Write("server", $"Invalid slot: {s}");
 					return false;
 				}
-
-				var slot = server.LobbyInfo.Slots[s];
 
 				if (slot.Closed || server.LobbyInfo.ClientInSlot(s) != null)
 					return false;
@@ -730,6 +728,12 @@ namespace OpenRA.Mods.Common.Server
 				var oo = server.LobbyInfo.GlobalSettings.LobbyOptions[option.Id];
 				if (oo.Value == split[1])
 					return true;
+
+				if (!option.Values.ContainsKey(split[1]))
+				{
+					server.SendLocalizedMessageTo(conn, InvalidConfigurationCommand);
+					return true;
+				}
 
 				oo.Value = oo.PreferredValue = split[1];
 
@@ -1163,9 +1167,7 @@ namespace OpenRA.Mods.Common.Server
 
 			// Clearing an empty spawn point prevents it from being selected
 			// Clearing a disabled spawn restores it for use
-			if (!server.LobbyInfo.DisabledSpawnPoints.Contains(spawnPoint))
-				server.LobbyInfo.DisabledSpawnPoints.Add(spawnPoint);
-			else
+			if (!server.LobbyInfo.DisabledSpawnPoints.Add(spawnPoint))
 				server.LobbyInfo.DisabledSpawnPoints.Remove(spawnPoint);
 
 			server.SyncLobbyInfo();
@@ -1192,13 +1194,13 @@ namespace OpenRA.Mods.Common.Server
 					return true;
 
 				if (!Exts.TryParseInt32Invariant(parts[1], out var spawnPoint)
-				    || spawnPoint < 0 || spawnPoint > server.Map.SpawnPoints.Length)
+					|| spawnPoint < 0 || spawnPoint > server.Map.SpawnPoints.Length)
 				{
 					Log.Write("server", $"Invalid spawn point: {parts[1]}");
 					return true;
 				}
 
-				if (server.LobbyInfo.Clients.Where(cc => cc != client).Any(cc => (cc.SpawnPoint == spawnPoint) && (cc.SpawnPoint != 0)))
+				if (server.LobbyInfo.Clients.Any(cc => cc != client && (cc.SpawnPoint == spawnPoint) && (cc.SpawnPoint != 0)))
 				{
 					server.SendLocalizedMessageTo(conn, SpawnOccupied);
 					return true;
@@ -1296,10 +1298,13 @@ namespace OpenRA.Mods.Common.Server
 			else
 				return;
 
-			var unknownMaps = server.MapPool.Where(server.MapIsUnknown);
-			if (server.Settings.QueryMapRepository && unknownMaps.Any())
+			var unknownMaps = server.MapPool.Where(server.MapIsUnknown).ToList();
+			if (unknownMaps.Count == 0)
+				return;
+
+			if (server.Settings.QueryMapRepository)
 			{
-				Log.Write("server", $"Querying Resource Center for information on {unknownMaps.Count()} maps...");
+				Log.Write("server", $"Querying Resource Center for information on {unknownMaps.Count} maps...");
 
 				// Query any missing maps and wait up to 10 seconds for a response
 				// Maps that have not resolved will not be valid for the initial map choice
@@ -1308,12 +1313,17 @@ namespace OpenRA.Mods.Common.Server
 
 				var searchingMaps = server.MapPool.Where(uid => mapCache[uid].Status == MapStatus.Searching);
 				var stopwatch = Stopwatch.StartNew();
+
+				// Each time we check, some map statuses may have updated.
+#pragma warning disable CA1851 // Possible multiple enumerations of 'IEnumerable' collection
 				while (searchingMaps.Any() && stopwatch.ElapsedMilliseconds < 10000)
 					Thread.Sleep(100);
+#pragma warning restore CA1851
 			}
 
-			if (unknownMaps.Any())
-				Log.Write("server", "Failed to resolve maps: " + unknownMaps.JoinWith(", "));
+			var stillUnknownMaps = server.MapPool.Where(server.MapIsUnknown).ToList();
+			if (stillUnknownMaps.Count != 0)
+				Log.Write("server", "Failed to resolve maps: " + stillUnknownMaps.JoinWith(", "));
 		}
 
 		static string ChooseInitialMap(S server)
@@ -1406,7 +1416,7 @@ namespace OpenRA.Mods.Common.Server
 			}
 		}
 
-		static Color SanitizePlayerColor(S server, Color askedColor, int playerIndex, Connection connectionToEcho = null)
+		public static Color SanitizePlayerColor(S server, Color askedColor, int playerIndex, Connection connectionToEcho = null)
 		{
 			lock (server.LobbyInfo)
 			{

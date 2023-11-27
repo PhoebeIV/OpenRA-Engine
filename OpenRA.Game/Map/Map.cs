@@ -159,26 +159,26 @@ namespace OpenRA
 		/// <summary>Defines the order of the fields in map.yaml.</summary>
 		static readonly MapField[] YamlFields =
 		{
-			new MapField("MapFormat"),
-			new MapField("RequiresMod"),
-			new MapField("Title"),
-			new MapField("Author"),
-			new MapField("Tileset"),
-			new MapField("MapSize"),
-			new MapField("Bounds"),
-			new MapField("Visibility"),
-			new MapField("Categories"),
-			new MapField("LockPreview", required: false, ignoreIfValue: "False"),
-			new MapField("Players", "PlayerDefinitions"),
-			new MapField("Actors", "ActorDefinitions"),
-			new MapField("Rules", "RuleDefinitions", required: false),
-			new MapField("Translations", "TranslationDefinitions", required: false),
-			new MapField("Sequences", "SequenceDefinitions", required: false),
-			new MapField("ModelSequences", "ModelSequenceDefinitions", required: false),
-			new MapField("Weapons", "WeaponDefinitions", required: false),
-			new MapField("Voices", "VoiceDefinitions", required: false),
-			new MapField("Music", "MusicDefinitions", required: false),
-			new MapField("Notifications", "NotificationDefinitions", required: false),
+			new("MapFormat"),
+			new("RequiresMod"),
+			new("Title"),
+			new("Author"),
+			new("Tileset"),
+			new("MapSize"),
+			new("Bounds"),
+			new("Visibility"),
+			new("Categories"),
+			new("LockPreview", required: false, ignoreIfValue: "False"),
+			new("Players", "PlayerDefinitions"),
+			new("Actors", "ActorDefinitions"),
+			new("Rules", "RuleDefinitions", required: false),
+			new("Translations", "TranslationDefinitions", required: false),
+			new("Sequences", "SequenceDefinitions", required: false),
+			new("ModelSequences", "ModelSequenceDefinitions", required: false),
+			new("Weapons", "WeaponDefinitions", required: false),
+			new("Voices", "VoiceDefinitions", required: false),
+			new("Music", "MusicDefinitions", required: false),
+			new("Notifications", "NotificationDefinitions", required: false),
 		};
 
 		// Format versions
@@ -776,19 +776,10 @@ namespace OpenRA
 
 			if (Grid.MaximumTerrainHeight > 0)
 			{
-				// The minimap is drawn in cell space, so we need to
-				// unproject the PPos bounds to find the MPos boundaries.
-				// This matches the calculation in RadarWidget that is used ingame
-				for (var x = Bounds.Left; x < Bounds.Right; x++)
-				{
-					var allTop = Unproject(new PPos(x, Bounds.Top));
-					var allBottom = Unproject(new PPos(x, Bounds.Bottom));
-					if (allTop.Count > 0)
-						top = Math.Min(top, allTop.MinBy(uv => uv.V).V);
+				(top, bottom) = GetCellSpaceBounds();
 
-					if (allBottom.Count > 0)
-						bottom = Math.Max(bottom, allBottom.MaxBy(uv => uv.V).V);
-				}
+				if (top == int.MaxValue || bottom == int.MinValue)
+					throw new InvalidDataException("The map has invalid boundaries");
 			}
 			else
 			{
@@ -862,6 +853,28 @@ namespace OpenRA
 
 			var png = new Png(minimapData, SpriteFrameType.Rgba32, bitmapWidth, height);
 			return png.Save();
+		}
+
+		public (int Top, int Bottom) GetCellSpaceBounds()
+		{
+			var top = int.MaxValue;
+			var bottom = int.MinValue;
+
+			// The minimap is drawn in cell space, so we need to
+			// unproject the PPos bounds to find the MPos boundaries.
+			// This matches the calculation in RadarWidget that is used ingame
+			for (var x = Bounds.Left; x < Bounds.Right; x++)
+			{
+				var allTop = Unproject(new PPos(x, Bounds.Top));
+				var allBottom = Unproject(new PPos(x, Bounds.Bottom));
+				if (allTop.Count > 0)
+					top = Math.Min(top, allTop.MinBy(uv => uv.V).V);
+
+				if (allBottom.Count > 0)
+					bottom = Math.Max(bottom, allBottom.MaxBy(uv => uv.V).V);
+			}
+
+			return (top, bottom);
 		}
 
 		public bool Contains(CPos cell)
@@ -1184,7 +1197,7 @@ namespace OpenRA
 			// Project this guessed cell and take the first available cell
 			// If it is projected outside the layer, then make another guess.
 			var allProjected = ProjectedCellsCovering(uv);
-			var projected = allProjected.Length > 0 ? allProjected.First()
+			var projected = allProjected.Length > 0 ? allProjected[0]
 				: new PPos(uv.U, uv.V.Clamp(Bounds.Top, Bounds.Bottom));
 
 			// Clamp the projected cell to the map area
@@ -1253,7 +1266,7 @@ namespace OpenRA
 			PPos edge;
 			if (allProjected.Length > 0)
 			{
-				var puv = allProjected.First();
+				var puv = allProjected[0];
 				var horizontalBound = (puv.U - Bounds.Left < Bounds.Width / 2) ? Bounds.Left : Bounds.Right;
 				var verticalBound = (puv.V - Bounds.Top < Bounds.Height / 2) ? Bounds.Top : Bounds.Bottom;
 

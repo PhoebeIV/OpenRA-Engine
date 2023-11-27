@@ -180,6 +180,7 @@ namespace OpenRA
 		}
 
 		public static event Action BeforeGameStart = () => { };
+		public static event Action AfterGameStart = () => { };
 		internal static void StartGame(string mapUID, WorldType type)
 		{
 			// Dispose of the old world before creating a new one.
@@ -227,6 +228,8 @@ namespace OpenRA
 			// PostLoadComplete is designed for anything that should trigger at the very end of loading.
 			// e.g. audio notifications that the game is starting.
 			OrderManager.World.PostLoadComplete(worldRenderer);
+
+			AfterGameStart();
 		}
 
 		public static void RestartGame()
@@ -420,7 +423,7 @@ namespace OpenRA
 
 				// Sanitize input from platform-specific launchers
 				// Process.Start requires paths to not be quoted, even if they contain spaces
-				if (launchPath != null && launchPath.First() == '"' && launchPath.Last() == '"')
+				if (launchPath != null && launchPath[0] == '"' && launchPath.Last() == '"')
 					launchPath = launchPath[1..^1];
 
 				// Metadata registration requires an explicit launch path
@@ -790,7 +793,7 @@ namespace OpenRA
 				var logicWorld = worldRenderer?.World;
 
 				// ReplayTimestep = 0 means the replay is paused: we need to keep logicInterval as UI.Timestep to avoid breakage
-				if (logicWorld != null && !(logicWorld.IsReplay && logicWorld.ReplayTimestep == 0))
+				if (logicWorld != null && (!logicWorld.IsReplay || logicWorld.ReplayTimestep != 0))
 					logicInterval = logicWorld == OrderManager.World ? OrderManager.SuggestedTimestep : logicWorld.Timestep;
 
 				// Ideal time between screen updates
@@ -925,15 +928,15 @@ namespace OpenRA
 		{
 			var endpoints = new List<IPEndPoint>
 			{
-				new IPEndPoint(IPAddress.IPv6Any, settings.ListenPort),
-				new IPEndPoint(IPAddress.Any, settings.ListenPort)
+				new(IPAddress.IPv6Any, settings.ListenPort),
+				new(IPAddress.Any, settings.ListenPort)
 			};
 			server = new Server.Server(endpoints, settings, ModData, ServerType.Multiplayer);
 
 			return server.GetEndpointForLocalConnection();
 		}
 
-		public static ConnectionTarget CreateLocalServer(string map)
+		public static ConnectionTarget CreateLocalServer(string map, bool isSkirmish = false)
 		{
 			var settings = new ServerSettings()
 			{
@@ -947,9 +950,9 @@ namespace OpenRA
 			// This would break the Restart button, which relies on the PlayerIndex always being the same for local servers
 			var endpoints = new List<IPEndPoint>
 			{
-				new IPEndPoint(IPAddress.Loopback, 0)
+				new(IPAddress.Loopback, 0)
 			};
-			server = new Server.Server(endpoints, settings, ModData, ServerType.Local);
+			server = new Server.Server(endpoints, settings, ModData, isSkirmish ? ServerType.Skirmish : ServerType.Local);
 
 			return server.GetEndpointForLocalConnection();
 		}

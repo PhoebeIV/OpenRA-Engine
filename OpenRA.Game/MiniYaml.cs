@@ -209,7 +209,7 @@ namespace OpenRA
 
 			var result = new List<List<MiniYamlNode>>
 			{
-				new List<MiniYamlNode>()
+				new()
 			};
 			var parsedLines = new List<(int Level, string Key, string Value, string Comment, MiniYamlNode.SourceLocation Location)>();
 
@@ -533,7 +533,7 @@ namespace OpenRA
 			{
 				// Append Removal nodes to the result.
 				// Therefore: we know the remainder of the method deals with a plain node.
-				if (node.Key.StartsWith("-", StringComparison.Ordinal))
+				if (node.Key.StartsWith('-'))
 				{
 					ret.Add(node);
 					return;
@@ -670,7 +670,7 @@ namespace OpenRA
 		public MiniYamlBuilder(string value, List<MiniYamlNode> nodes)
 		{
 			Value = value;
-			Nodes = nodes == null ? new List<MiniYamlNodeBuilder>() : nodes.Select(x => new MiniYamlNodeBuilder(x)).ToList();
+			Nodes = nodes == null ? new List<MiniYamlNodeBuilder>() : nodes.ConvertAll(x => new MiniYamlNodeBuilder(x));
 		}
 
 		public MiniYaml Build()

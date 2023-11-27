@@ -119,10 +119,10 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 				var rx = mf.ReadUInt16();
 				var ry = mf.ReadUInt16();
 				var tilenum = mf.ReadUInt16();
-				/*var zero1 = */mf.ReadInt16();
+				mf.ReadInt16(); // zero1
 				var subtile = mf.ReadUInt8();
 				var z = mf.ReadUInt8();
-				/*var zero2 = */mf.ReadUInt8();
+				mf.ReadUInt8(); // zero2
 
 				var uv = ToMPos(rx, ry, fullSize.X);
 
@@ -262,9 +262,9 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 
 				var name = entries[1].ToLowerInvariant();
 
-				if (DeployableActors.ContainsKey(name))
+				if (DeployableActors.TryGetValue(name, out var n))
 				{
-					name = DeployableActors[name];
+					name = n;
 					isDeployed = true;
 				}
 
@@ -421,9 +421,30 @@ namespace OpenRA.Mods.Cnc.UtilityCommands
 			// Calculate Bounds edge tile coordinates.
 			// Reduce bottom and right by 1 because map.SetBounds() increases them.
 			var topLeft = new PPos(left, top);
-			var bottomRight = new PPos(playableAreaWidth + left - 1, playableAreaHeight + unknownHeightPadding + top - 1);
 
-			map.SetBounds(topLeft, bottomRight);
+			if (map.Height.Max() != 0)
+			{
+				// Workaround: Some custom TS maps have invalid boundaries, with no padding area at the bottom
+				// The boundary needs to be reduced until the projections are valid
+				bool hasValidBoundaries;
+				var paddingOffset = 1;
+				do
+				{
+					var bottomRight = new PPos(playableAreaWidth + left - 1, playableAreaHeight + unknownHeightPadding + top - paddingOffset);
+					map.SetBounds(topLeft, bottomRight);
+
+					var (topBound, bottomBound) = map.GetCellSpaceBounds();
+
+					hasValidBoundaries = topBound != int.MaxValue && bottomBound != int.MinValue;
+					paddingOffset++;
+				}
+				while (!hasValidBoundaries);
+			}
+			else
+			{
+				var bottomRight = new PPos(playableAreaWidth + left - 1, playableAreaHeight + unknownHeightPadding + top - 1);
+				map.SetBounds(topLeft, bottomRight);
+			}
 		}
 
 		protected virtual bool TryHandleOverlayToActorInner(CPos cell, byte[] overlayPack, CellLayer<int> overlayIndex, byte overlayType, out ActorReference actorReference)

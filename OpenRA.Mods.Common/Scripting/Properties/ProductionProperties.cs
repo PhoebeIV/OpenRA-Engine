@@ -187,8 +187,7 @@ namespace OpenRA.Mods.Common.Scripting
 			if (triggers.HasAnyCallbacksFor(Trigger.OnProduction))
 				return true;
 
-			return queues.Where(q => GetBuildableInfo(actorType).Queue.Contains(q.Info.Type))
-				.Any(q => q.AllQueued().Any());
+			return queues.Any(q => GetBuildableInfo(actorType).Queue.Contains(q.Info.Type) && q.AllQueued().Any());
 		}
 
 		BuildableInfo GetBuildableInfo(string actorType)
@@ -292,10 +291,10 @@ namespace OpenRA.Mods.Common.Scripting
 		{
 			var queue = GetBuildableInfo(actorType).Queue.First();
 
-			if (!queues.ContainsKey(queue))
+			if (!queues.TryGetValue(queue, out var cpq))
 				return true;
 
-			return productionHandlers.ContainsKey(queue) || queues[queue].AllQueued().Any();
+			return productionHandlers.ContainsKey(queue) || cpq.AllQueued().Any();
 		}
 
 		BuildableInfo GetBuildableInfo(string actorType)

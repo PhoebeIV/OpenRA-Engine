@@ -14,10 +14,14 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using OpenRA.FileSystem;
+using OpenRA.Mods.Common.UpdateRules;
 using OpenRA.Widgets;
 
-namespace OpenRA.UtilityCommands
+namespace OpenRA.Mods.Common.UtilityCommands
 {
+	using YamlFileSet = List<(IReadWritePackage Package, string File, List<MiniYamlNodeBuilder> Nodes)>;
+
 	sealed class ExtractChromeStringsCommand : IUtilityCommand
 	{
 		string IUtilityCommand.Name { get { return "--extract-chrome-strings"; } }
@@ -51,7 +55,8 @@ namespace OpenRA.UtilityCommands
 
 				var unsortedCandidates = new List<TranslationCandidate>();
 				var groupedCandidates = new Dictionary<HashSet<string>, List<TranslationCandidate>>();
-				var chromeFiles = new List<(string Path, List<MiniYamlNodeBuilder> Nodes)>();
+
+				var yamlSet = new YamlFileSet();
 
 				// Get all translations.
 				foreach (var chrome in layout)
@@ -59,8 +64,8 @@ namespace OpenRA.UtilityCommands
 					modData.ModFiles.TryGetPackageContaining(chrome, out var chromePackage, out var chromeName);
 					var chromePath = Path.Combine(chromePackage.Name, chromeName);
 
-					var yaml = MiniYaml.FromFile(chromePath, false).Select(n => new MiniYamlNodeBuilder(n)).ToList();
-					chromeFiles.Add((chromePath, yaml));
+					var yaml = MiniYaml.FromFile(chromePath, false).ConvertAll(n => new MiniYamlNodeBuilder(n));
+					yamlSet.Add(((IReadWritePackage)chromePackage, chromeName, yaml));
 
 					var translationCandidates = new List<TranslationCandidate>();
 					foreach (var node in yaml)
@@ -125,14 +130,24 @@ namespace OpenRA.UtilityCommands
 						groupedCandidates[newHash] = new List<TranslationCandidate>() { candidate };
 				}
 
-				// Write to translation and yaml files.
-				Directory.CreateDirectory(Path.GetDirectoryName(fluentPath));
+				var startWithNewline = File.Exists(fluentPath);
+
+				// StreamWriter can't create new directories.
+				if (!startWithNewline)
+					Directory.CreateDirectory(Path.GetDirectoryName(fluentPath));
+
+				// Write to translation files.
 				using (var fluentWriter = new StreamWriter(fluentPath, append: true))
 				{
 					foreach (var (chromeFilename, candidates) in groupedCandidates.OrderBy(t => string.Join(',', t.Key)))
 					{
 						if (candidates.Count == 0)
 							continue;
+
+						if (startWithNewline)
+							fluentWriter.WriteLine();
+						else
+							startWithNewline = true;
 
 						fluentWriter.WriteLine("## " + string.Join(", ", chromeFilename));
 
@@ -180,27 +195,12 @@ namespace OpenRA.UtilityCommands
 							}
 						}
 
-						fluentWriter.WriteLine(build.Trim('\n') + '\n');
+						fluentWriter.WriteLine(build.Trim('\n'));
 					}
 				}
 
-				foreach (var chromeFile in chromeFiles)
-				{
-					using (var chromeLayoutWriter = new StreamWriter(chromeFile.Path))
-						chromeLayoutWriter.WriteLine(chromeFile.Nodes.WriteToString());
-				}
+				yamlSet.Save();
 			}
-		}
-
-		static bool IsAlreadyTranslated(string translation)
-		{
-			if (translation == translation.ToLowerInvariant() && translation.Any(c => c == '-'))
-			{
-				Console.WriteLine("Skipping " + translation + " because it is already translated.");
-				return true;
-			}
-
-			return false;
 		}
 
 		struct TranslationCandidate
@@ -257,12 +257,12 @@ namespace OpenRA.UtilityCommands
 			var validChildTypes = new List<(MiniYamlNodeBuilder Node, string Type, string Value)>();
 			foreach (var childNode in node.Value.Nodes)
 			{
-				if (translatables.ContainsKey(nodeType))
+				if (translatables.TryGetValue(nodeType, out var fieldName))
 				{
 					var childType = childNode.Key.Split('@')[0];
-					if (translatables[nodeType].Contains(childType)
+					if (fieldName.Contains(childType)
 						&& !string.IsNullOrEmpty(childNode.Value.Value)
-						&& !IsAlreadyTranslated(childNode.Value.Value)
+						&& !UpdateUtils.IsAlreadyTranslated(childNode.Value.Value)
 						&& childNode.Value.Value.Any(char.IsLetterOrDigit))
 					{
 						var translationValue = childNode.Value.Value
@@ -303,7 +303,7 @@ namespace OpenRA.UtilityCommands
 					translations.Add(new TranslationCandidate(translationKey, childType, translationValue.Trim().Trim('\n'), childNode));
 			}
 
-			// Recurse.
+			// Recursive.
 			foreach (var childNode in node.Value.Nodes)
 				if (childNode.Key == "Children")
 					foreach (var n in childNode.Value.Nodes)

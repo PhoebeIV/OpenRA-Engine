@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Primitives;
 using OpenRA.Widgets;
@@ -225,11 +224,10 @@ namespace OpenRA.Mods.Common.Widgets
 
 			// ChildOrigin enumerates the widget tree, so only evaluate it once
 			var co = ChildOrigin;
-			drawBounds.X -= co.X;
-			drawBounds.Y -= co.Y;
+			drawBounds = new Rectangle(drawBounds.X - co.X, drawBounds.Y - co.Y, drawBounds.Width, drawBounds.Height);
 
 			foreach (var child in Children)
-				if (child.Bounds.IntersectsWith(drawBounds))
+				if (child.Bounds.ToRectangle().IntersectsWith(drawBounds))
 					child.DrawOuter();
 
 			Game.Renderer.DisableScissor();

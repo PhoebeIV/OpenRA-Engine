@@ -27,7 +27,7 @@ harvester:
 		Facings: -8
 		Tick: 80
 		ZOffset: 1
-		BlendMode: Multiply
+		Alpha: 0.5
 	dock:
 		Filename: DATA.R8
 		Start: 3623
@@ -60,7 +60,7 @@ trike:
 		BlendMode: Additive
 	icon:
 		Filename: DATA.R8
-		Start: 4305
+		Start: 4277
 		Offset: -30,-24
 
 quad:

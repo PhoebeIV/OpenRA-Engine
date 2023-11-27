@@ -32,8 +32,7 @@ namespace OpenRA.Mods.Common.Scripting
 			"If duration > 0 the condition will be automatically revoked after the defined number of ticks.")]
 		public int GrantCondition(string condition, int duration = 0)
 		{
-			var external = externalConditions
-				.FirstOrDefault(t => t.Info.Condition == condition && t.CanGrantCondition(this));
+			var external = externalConditions.FirstOrDefault(t => t.Info.Condition == condition && t.CanGrantCondition(this));
 
 			if (external == null)
 				throw new LuaException($"Condition `{condition}` has not been listed on an enabled ExternalCondition trait");

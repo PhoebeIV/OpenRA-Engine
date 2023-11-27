@@ -45,7 +45,7 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 					harvesters[actorNode.Key] = harvesterNode.ChildrenMatching("DeliveryBuildings", includeRemovals: false)
 						.FirstOrDefault()?.NodeValue<HashSet<string>>() ?? new HashSet<string>();
 
-				if (actorNode.ChildrenMatching("Refinery", includeRemovals: false).FirstOrDefault() != null)
+				if (actorNode.ChildrenMatching("Refinery", includeRemovals: false).Any())
 					refineries.Add(actorNode.Key.ToLowerInvariant());
 			}
 
@@ -80,10 +80,10 @@ namespace OpenRA.Mods.Common.UpdateRules.Rules
 				var dockNode = new MiniYamlNodeBuilder("DockHost", "");
 
 				var lowActorName = actorNode.Key.ToLowerInvariant();
-				if (!refineryNodes.ContainsKey(lowActorName) || !refineryNodes[lowActorName].Any(n => n.Key == "Type"))
+				if (!refineryNodes.TryGetValue(lowActorName, out var nodes) || !nodes.Any(n => n.Key == "Type"))
 					dockNode.AddNode("Type", "Unload");
 				else
-					dockNode.AddNode(refineryNodes[lowActorName].First(n => n.Key == "Type"));
+					dockNode.AddNode(nodes.First(n => n.Key == "Type"));
 
 				foreach (var value in moveRefineyValues)
 				{

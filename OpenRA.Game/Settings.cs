@@ -370,7 +370,7 @@ namespace OpenRA
 
 		public void Save()
 		{
-			var yamlCacheBuilder = yamlCache.Select(n => new MiniYamlNodeBuilder(n)).ToList();
+			var yamlCacheBuilder = yamlCache.ConvertAll(n => new MiniYamlNodeBuilder(n));
 			foreach (var kv in Sections)
 			{
 				var sectionYaml = yamlCacheBuilder.FirstOrDefault(x => x.Key == kv.Key);
