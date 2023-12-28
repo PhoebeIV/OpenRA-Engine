@@ -1222,7 +1222,10 @@ namespace OpenRA.Mods.Common.Traits
 
 		Activity ICreationActivity.GetCreationActivity()
 		{
-			return new AssociateWithAirfieldActivity(self, creationActivityDelay, creationRallyPoint);
+			if (creationRallyPoint != null || creationActivityDelay > 0)
+				return new AssociateWithAirfieldActivity(self, creationActivityDelay, creationRallyPoint);
+
+			return null;
 		}
 
 		sealed class AssociateWithAirfieldActivity : Activity
@@ -1234,7 +1237,6 @@ namespace OpenRA.Mods.Common.Traits
 			public AssociateWithAirfieldActivity(Actor self, int delay, CPos[] rallyPoint)
 			{
 				aircraft = self.Trait<Aircraft>();
-				IsInterruptible = false;
 				this.delay = delay;
 				this.rallyPoint = rallyPoint;
 			}
@@ -1243,7 +1245,12 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				var host = aircraft.GetActorBelow();
 				if (host != null)
+				{
 					aircraft.MakeReservation(host);
+
+					// Freshly created aircraft shouldn't block the exit, so we allow them to yield their reservation.
+					aircraft.AllowYieldingReservation();
+				}
 
 				if (delay > 0)
 					QueueChild(new Wait(delay));
@@ -1251,17 +1258,13 @@ namespace OpenRA.Mods.Common.Traits
 
 			public override bool Tick(Actor self)
 			{
-				if (!aircraft.Info.TakeOffOnCreation)
-				{
-					// Freshly created aircraft shouldn't block the exit, so we allow them to yield their reservation
-					aircraft.AllowYieldingReservation();
+				if (!aircraft.Info.TakeOffOnCreation || IsCanceling)
 					return true;
-				}
 
-				if (rallyPoint != null && aircraft.Info.TakeOffOnCreation)
+				if (rallyPoint != null && rallyPoint.Length > 0)
 				{
 					foreach (var cell in rallyPoint)
-						self.QueueActivity(new AttackMoveActivity(self, () => aircraft.MoveTo(cell, 1, evaluateNearestMovableCell: true, targetLineColor: Color.OrangeRed)));
+						QueueChild(new AttackMoveActivity(self, () => aircraft.MoveTo(cell, 1, evaluateNearestMovableCell: true, targetLineColor: Color.OrangeRed)));
 				}
 				else if (self.World.Map.DistanceAboveTerrain(aircraft.CenterPosition).Length <= aircraft.LandAltitude.Length)
 					QueueChild(new TakeOff(self));
