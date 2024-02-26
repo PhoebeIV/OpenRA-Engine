@@ -180,6 +180,9 @@ namespace OpenRA.Mods.Common.Projectiles
 			"Note: If this value is lower than the missile speed, this check might",
 			"not trigger fast enough, causing the missile to fly past the target.")]
 		public readonly WDist CloseEnough = new(298);
+	
+		[Desc("Type defined for point-defense logic.")]
+		public readonly string PointDefenseType = null;
 
 		public IProjectile Create(ProjectileArgs args) { return new Missile(this, args); }
 	}
@@ -908,6 +911,9 @@ namespace OpenRA.Mods.Common.Projectiles
 				|| !world.Map.Contains(cell) // This also avoids an IndexOutOfRangeException in GetTerrainInfo below.
 				|| (!string.IsNullOrEmpty(info.BoundToTerrainType) && world.Map.GetTerrainInfo(cell).Type != info.BoundToTerrainType) // Hit incompatible terrain
 				|| (height.Length < info.AirburstAltitude.Length && relTarHorDist < info.CloseEnough.Length); // Airburst
+
+			if (!shouldExplode && !string.IsNullOrEmpty(info.PointDefenseType))
+				shouldExplode |= world.ActorsWithTrait<IPointDefense>().Any(x => x.Trait.Destroy(pos, args.SourceActor.Owner, info.PointDefenseType));
 
 			if (shouldExplode)
 				Explode(world);

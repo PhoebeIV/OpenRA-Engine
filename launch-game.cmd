@@ -11,6 +11,7 @@ if "%mod%" EQU "ra" (goto launchmod)
 if "%mod%" EQU "cnc" (goto launchmod)
 if "%mod%" EQU "ts" (goto launchmod)
 if "%mod%" EQU "d2k" (goto launchmod)
+if "%mod%" EQU "ow" (goto launchmod)
 echo.
 echo Unknown mod: %mod%
 echo.

@@ -483,6 +483,9 @@ namespace OpenRA.Mods.Common.Traits
 
 	[RequireExplicitImplementation]
 	public interface IResourceValueModifier { int GetResourceValueModifier(); }
+	
+	[RequireExplicitImplementation]
+	public interface IShieldRegenModifier { int GetShieldRegenModifier(); }
 
 	[RequireExplicitImplementation]
 	public interface ICustomMovementLayer

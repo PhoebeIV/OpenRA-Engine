@@ -29,6 +29,7 @@ if /I "%mod%" EQU "ra" (goto help)
 if /I "%mod%" EQU "cnc" (goto help)
 if /I "%mod%" EQU "ts" (goto help)
 if /I "%mod%" EQU "d2k" (goto help)
+if /I "%mod%" EQU "ow" (goto help)
 echo.
 echo Unknown mod: %mod%
 echo.

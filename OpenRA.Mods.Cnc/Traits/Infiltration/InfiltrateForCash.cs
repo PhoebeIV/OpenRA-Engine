@@ -33,12 +33,6 @@ namespace OpenRA.Mods.Cnc.Traits
 		[Desc("Maximum amount of funds which will be stolen.")]
 		public readonly int Maximum = int.MaxValue;
 
-		[Desc("Experience to grant to the infiltrating player.")]
-		public readonly int PlayerExperience = 0;
-
-		[Desc("Experience to grant to the infiltrating player based on cash stolen.")]
-		public readonly int PlayerExperiencePercentage = 0;
-
 		[NotificationReference("Speech")]
 		[Desc("Sound the victim will hear when they get robbed.")]
 		public readonly string InfiltratedNotification = null;
@@ -81,8 +75,6 @@ namespace OpenRA.Mods.Cnc.Traits
 
 			targetResources.TakeCash(toTake);
 			spyResources.GiveCash(toGive);
-
-			infiltrator.Owner.PlayerActor.TraitOrDefault<PlayerExperience>()?.GiveExperience(info.PlayerExperience + toTake * info.PlayerExperiencePercentage / 100);
 
 			if (info.InfiltratedNotification != null)
 				Game.Sound.PlayNotification(self.World.Map.Rules, self.Owner, "Speech", info.InfiltratedNotification, self.Owner.Faction.InternalName);

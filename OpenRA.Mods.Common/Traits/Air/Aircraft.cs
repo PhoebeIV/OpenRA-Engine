@@ -767,7 +767,9 @@ namespace OpenRA.Mods.Common.Traits
 					return;
 				}
 
-				if (Info.IdleBehavior == IdleBehaviorType.Land && Info.LandableTerrainTypes.Count > 0)
+				if (Info.IdleBehavior != IdleBehaviorType.Land && dat != Info.CruiseAltitude)
+					self.QueueActivity(new TakeOff(self));
+				else if (Info.IdleBehavior == IdleBehaviorType.Land && Info.LandableTerrainTypes.Count > 0)
 					self.QueueActivity(new Land(self));
 				else
 					self.QueueActivity(new FlyIdle(self));
@@ -868,8 +870,7 @@ namespace OpenRA.Mods.Common.Traits
 		public void AddInfluence((CPos, SubCell)[] landingCells)
 		{
 			if (HasInfluence())
-				throw new InvalidOperationException(
-					$"Cannot {nameof(AddInfluence)} until previous influence is removed with {nameof(RemoveInfluence)}");
+				RemoveInfluence();
 
 			this.landingCells = landingCells;
 			if (self.IsInWorld)

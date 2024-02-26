@@ -12,6 +12,7 @@ obj
 *.lastcodeanalysissucceeded
 _ReSharper.*/
 /.vs
+/mods/ow
 
 # Visual Studio Code
 /.vscode/settings.json

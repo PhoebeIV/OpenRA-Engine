@@ -65,27 +65,42 @@ namespace OpenRA.Mods.Common.Activities
 
 		public override bool Tick(Actor self)
 		{
-			if (IsCanceling)
+			if (cargo != carryall.Carryable)
 				return true;
 
 			if (cargo.IsDead || carryable.IsTraitDisabled || carryall.IsTraitDisabled || !cargo.AppearsFriendlyTo(self) || cargo != carryall.Carryable)
 			{
-				Cancel(self, true);
-				return false;
+				if (carryall.State == Carryall.CarryallState.Reserved)
+					carryall.UnreserveCarryable(self);
+
+				// Make sure we run the TakeOff activity if we are / have landed
+				if (self.Trait<Aircraft>().HasInfluence())
+				{
+					ChildHasPriority = true;
+					IsInterruptible = false;
+					QueueChild(new TakeOff(self));
+					return false;
+				}
+
+				return true;
+			}
+
+			if (cargo.IsDead || carryable.IsTraitDisabled || !cargo.AppearsFriendlyTo(self))
+			{
+				carryall.UnreserveCarryable(self);
+				return true;
 			}
 
 			// Wait until we are near the target before we try to lock it
-			if (state == PickupState.Intercept && (cargo.CenterPosition - self.CenterPosition).HorizontalLengthSquared <= targetLockRange.LengthSquared)
+			var distSq = (cargo.CenterPosition - self.CenterPosition).HorizontalLengthSquared;
+			if (state == PickupState.Intercept && distSq <= targetLockRange.LengthSquared)
 				state = PickupState.LockCarryable;
 
 			if (state == PickupState.LockCarryable)
 			{
 				var lockResponse = carryable.LockForPickup(cargo, self);
 				if (lockResponse == LockResponse.Failed)
-				{
-					Cancel(self, true);
-					return false;
-				}
+					Cancel(self);
 				else if (lockResponse == LockResponse.Success)
 				{
 					// Pickup position and facing are now known - swap the fly/wait activity with Land
@@ -106,36 +121,12 @@ namespace OpenRA.Mods.Common.Activities
 				}
 			}
 
-			// Return once we are in the pickup state and the pickup activities have completed.
-			return TickChild(self) && state == PickupState.Pickup;
-		}
-
-		public override void Cancel(Actor self, bool keepQueue = false)
-		{
-			base.Cancel(self, keepQueue);
-
-			// We are safe to bail here as base won't set IsCanceling to true if not interruptible.
-			if (!IsInterruptible)
-				return;
-
-			// This nulls caryall storage, so to avoid deleting units make sure it is not called while carrying one.
-			if (carryall.State == Carryall.CarryallState.Reserved)
-				carryall.UnreserveCarryable(self);
-
-			// TakeOff is not interruptible, but this activity is. To deal with it we bail. We transfer
-			// priority both to dispose of this activity and to make sure TakeOff is not disposed with it.
+			// We don't want to allow TakeOff to be cancelled
 			if (ChildActivity is TakeOff)
-			{
 				ChildHasPriority = true;
-				return;
-			}
 
-			// Make sure we run the TakeOff activity if we are / have landed.
-			if (self.Trait<Aircraft>().HasInfluence())
-			{
-				ChildHasPriority = true;
-				QueueChild(new TakeOff(self));
-			}
+			// Return once we are in the pickup state and the pickup activities have completed
+			return TickChild(self) && state == PickupState.Pickup;
 		}
 
 		public override IEnumerable<TargetLineNode> TargetLineNodes(Actor self)

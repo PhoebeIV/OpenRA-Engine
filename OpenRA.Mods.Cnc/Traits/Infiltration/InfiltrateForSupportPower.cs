@@ -24,9 +24,6 @@ namespace OpenRA.Mods.Cnc.Traits
 		[Desc("The `TargetTypes` from `Targetable` that are allowed to enter.")]
 		public readonly BitSet<TargetableType> Types = default;
 
-		[Desc("Experience to grant to the infiltrating player.")]
-		public readonly int PlayerExperience = 0;
-
 		[NotificationReference("Speech")]
 		[Desc("Sound the victim will hear when technology gets stolen.")]
 		public readonly string InfiltratedNotification = null;
@@ -68,8 +65,6 @@ namespace OpenRA.Mods.Cnc.Traits
 
 			TextNotificationsManager.AddTransientLine(self.Owner, info.InfiltratedTextNotification);
 			TextNotificationsManager.AddTransientLine(infiltrator.Owner, info.InfiltrationTextNotification);
-
-			infiltrator.Owner.PlayerActor.TraitOrDefault<PlayerExperience>()?.GiveExperience(info.PlayerExperience);
 
 			infiltrator.World.AddFrameEndTask(w => w.CreateActor(info.Proxy, new TypeDictionary
 			{

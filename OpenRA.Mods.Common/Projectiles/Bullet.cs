@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OpenRA.GameRules;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Effects;
@@ -134,6 +135,8 @@ namespace OpenRA.Mods.Common.Projectiles
 		[Desc("The alpha value [from 0 to 255] of color at the contrail end.")]
 		public readonly int ContrailEndColorAlpha = 0;
 
+		[Desc("Type defined for point-defense logic.")]
+		public readonly string PointDefenseType = null;
 		public virtual IProjectile Create(ProjectileArgs args) { return new Bullet(this, args); }
 	}
 
@@ -305,6 +308,9 @@ namespace OpenRA.Mods.Common.Projectiles
 
 			// After first bounce, check for targets each tick
 			if (remainingBounces < info.BounceCount && AnyValidTargetsInRadius(world, pos, info.Width, Args.SourceActor, true))
+				return true;
+
+			if (!string.IsNullOrEmpty(info.PointDefenseType) && world.ActorsWithTrait<IPointDefense>().Any(x => x.Trait.Destroy(pos, Args.SourceActor.Owner, info.PointDefenseType)))
 				return true;
 
 			return false;
