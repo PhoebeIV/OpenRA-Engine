@@ -428,7 +428,8 @@ namespace OpenRA.Mods.Common.Traits
 							foreach (var nbm in nbms)
 								nbm.OnNotifyBlockingMove(passenger, passenger);
 
-							passenger.Trait<Passenger>().OnEjectedFromKilledCargo(passenger);
+							// For show.
+							passenger.QueueActivity(new Nudge(passenger));
 						}
 						else
 							passenger.Kill(e.Attacker);
