@@ -37,7 +37,7 @@ namespace OpenRA.Mods.Common.Traits
 		public override object Create(ActorInitializer init) { return new HarvesterBotModule(init.Self, this); }
 	}
 
-	public class HarvesterBotModule : ConditionalTrait<HarvesterBotModuleInfo>, IBotTick, INotifyActorDisposing
+	public class HarvesterBotModule : ConditionalTrait<HarvesterBotModuleInfo>, IBotTick
 	{
 		sealed class HarvesterTraitWrapper
 		{
@@ -59,8 +59,6 @@ namespace OpenRA.Mods.Common.Traits
 		readonly Player player;
 		readonly Func<Actor, bool> unitCannotBeOrdered;
 		readonly Dictionary<Actor, HarvesterTraitWrapper> harvesters = new();
-		readonly ActorIndex.OwnerAndNamesAndTrait<Building> refineries;
-		readonly ActorIndex.OwnerAndNamesAndTrait<Harvester> harvestersIndex;
 
 		IResourceLayer resourceLayer;
 		ResourceClaimLayer claimLayer;
@@ -73,8 +71,6 @@ namespace OpenRA.Mods.Common.Traits
 			world = self.World;
 			player = self.Owner;
 			unitCannotBeOrdered = a => a.Owner != self.Owner || a.IsDead || !a.IsInWorld;
-			refineries = new ActorIndex.OwnerAndNamesAndTrait<Building>(world, info.RefineryTypes, player);
-			harvestersIndex = new ActorIndex.OwnerAndNamesAndTrait<Harvester>(world, info.HarvesterTypes, player);
 		}
 
 		protected override void Created(Actor self)
@@ -106,6 +102,7 @@ namespace OpenRA.Mods.Common.Traits
 			scanForIdleHarvestersTicks = Info.ScanForIdleHarvestersInterval;
 
 			// Find new harvesters
+			// TODO: Look for a more performance-friendly way to update this list
 			var newHarvesters = world.ActorsHavingTrait<Harvester>().Where(a => !unitCannotBeOrdered(a) && !harvesters.ContainsKey(a));
 			foreach (var a in newHarvesters)
 				harvesters[a] = new HarvesterTraitWrapper(a);
@@ -136,15 +133,10 @@ namespace OpenRA.Mods.Common.Traits
 			var unitBuilder = requestUnitProduction.FirstEnabledTraitOrDefault();
 			if (unitBuilder != null && Info.HarvesterTypes.Count > 0)
 			{
-				var harvCountTooLow =
-					AIUtils.CountActorByCommonName(harvestersIndex) <
-					AIUtils.CountActorByCommonName(refineries);
-				if (harvCountTooLow)
-				{
-					var harvesterType = Info.HarvesterTypes.Random(world.LocalRandom);
-					if (unitBuilder.RequestedProductionCount(bot, harvesterType) == 0)
-						unitBuilder.RequestUnitProduction(bot, harvesterType);
-				}
+				var harvInfo = AIUtils.GetInfoByCommonName(Info.HarvesterTypes, player);
+				var harvCountTooLow = AIUtils.CountActorByCommonName(Info.HarvesterTypes, player) < AIUtils.CountBuildingByCommonName(Info.RefineryTypes, player);
+				if (harvCountTooLow && unitBuilder.RequestedProductionCount(bot, harvInfo.Name) == 0)
+					unitBuilder.RequestUnitProduction(bot, harvInfo.Name);
 			}
 		}
 
@@ -164,12 +156,6 @@ namespace OpenRA.Mods.Common.Traits
 				return Target.Invalid;
 
 			return Target.FromCell(world, path[0]);
-		}
-
-		void INotifyActorDisposing.Disposing(Actor self)
-		{
-			refineries.Dispose();
-			harvestersIndex.Dispose();
 		}
 	}
 }
