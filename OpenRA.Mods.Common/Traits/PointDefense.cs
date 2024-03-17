@@ -74,7 +74,7 @@ namespace OpenRA.Mods.AS.Traits
 			self.World.AddFrameEndTask(w =>
 			{
 				if (!self.IsDead)
-					armament.CheckFire(self, null, Target.FromPos(position), true);
+					armament.CheckFire(self, null, Target.FromPos(position));
 			});
 			return true;
 		}
