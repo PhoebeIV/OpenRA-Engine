@@ -24,11 +24,9 @@ namespace OpenRA.Graphics
 		readonly ISpriteLoader[] loaders;
 		readonly IReadOnlyFileSystem fileSystem;
 
-		readonly Dictionary<int, (int[] Frames, MiniYamlNode.SourceLocation Location, bool Premultiplied)> spriteReservations = new();
-		readonly Dictionary<int, (int[] Frames, MiniYamlNode.SourceLocation Location)> frameReservations = new();
+		readonly Dictionary<int, (int[] Frames, MiniYamlNode.SourceLocation Location, Func<ISpriteFrame, ISpriteFrame> AdjustFrame, bool Premultiplied)> spriteReservations = new();
 		readonly Dictionary<string, List<int>> reservationsByFilename = new();
 
-		readonly Dictionary<int, ISpriteFrame[]> resolvedFrames = new();
 		readonly Dictionary<int, Sprite[]> resolvedSprites = new();
 
 		readonly Dictionary<int, (string Filename, MiniYamlNode.SourceLocation Location)> missingFiles = new();
@@ -47,18 +45,10 @@ namespace OpenRA.Graphics
 			this.loaders = loaders;
 		}
 
-		public int ReserveSprites(string filename, IEnumerable<int> frames, MiniYamlNode.SourceLocation location, bool premultiplied = false)
+		public int ReserveSprites(string filename, IEnumerable<int> frames, MiniYamlNode.SourceLocation location, Func<ISpriteFrame, ISpriteFrame> adjustFrame = null, bool premultiplied = false)
 		{
 			var token = nextReservationToken++;
-			spriteReservations[token] = (frames?.ToArray(), location, premultiplied);
-			reservationsByFilename.GetOrAdd(filename, _ => new List<int>()).Add(token);
-			return token;
-		}
-
-		public int ReserveFrames(string filename, IEnumerable<int> frames, MiniYamlNode.SourceLocation location)
-		{
-			var token = nextReservationToken++;
-			frameReservations[token] = (frames?.ToArray(), location);
+			spriteReservations[token] = (frames?.ToArray(), location, adjustFrame, premultiplied);
 			reservationsByFilename.GetOrAdd(filename, _ => new List<int>()).Add(token);
 			return token;
 		}
@@ -84,51 +74,34 @@ namespace OpenRA.Graphics
 			foreach (var sb in SheetBuilders.Values)
 				sb.Current.CreateBuffer();
 
-			var spriteCache = new Dictionary<int, Sprite>();
+			var pendingResolve = new List<(
+				string Filename,
+				int FrameIndex,
+				bool Premultiplied,
+				Func<ISpriteFrame, ISpriteFrame> AdjustFrame,
+				ISpriteFrame Frame,
+				Sprite[] SpritesForToken)>();
 			foreach (var (filename, tokens) in reservationsByFilename)
 			{
 				modData.LoadScreen?.Display();
 				var loadedFrames = GetFrames(fileSystem, filename, loaders, out _);
 				foreach (var token in tokens)
 				{
-					if (frameReservations.TryGetValue(token, out var rf))
-					{
-						if (loadedFrames != null)
-						{
-							if (rf.Frames != null)
-							{
-								var resolved = new ISpriteFrame[loadedFrames.Length];
-								foreach (var i in rf.Frames)
-									resolved[i] = loadedFrames[i];
-								resolvedFrames[token] = resolved;
-							}
-							else
-								resolvedFrames[token] = loadedFrames;
-						}
-						else
-						{
-							resolvedFrames[token] = null;
-							missingFiles[token] = (filename, rf.Location);
-						}
-					}
-
 					if (spriteReservations.TryGetValue(token, out var rs))
 					{
 						if (loadedFrames != null)
 						{
 							var resolved = new Sprite[loadedFrames.Length];
+							resolvedSprites[token] = resolved;
 							var frames = rs.Frames ?? Enumerable.Range(0, loadedFrames.Length);
 
-							// Premultiplied and non-premultiplied sprites must be cached separately
-							// to cover the case where the same image is requested in both versions.
-							// The premultiplied sprites are stored with an index offset for efficiency
-							// rather than allocating a second dictionary.
-							var di = rs.Premultiplied ? loadedFrames.Length : 0;
 							foreach (var i in frames)
-								resolved[i] = spriteCache.GetOrAdd(i + di,
-									f => SheetBuilders[SheetBuilder.FrameTypeToSheetType(loadedFrames[f - di].Type)].Add(loadedFrames[f - di], rs.Premultiplied));
-
-							resolvedSprites[token] = resolved;
+							{
+								var frame = loadedFrames[i];
+								if (rs.AdjustFrame != null)
+									frame = rs.AdjustFrame(frame);
+								pendingResolve.Add((filename, i, rs.Premultiplied, rs.AdjustFrame, frame, resolved));
+							}
 						}
 						else
 						{
@@ -137,13 +110,37 @@ namespace OpenRA.Graphics
 						}
 					}
 				}
-
-				spriteCache.Clear();
 			}
 
 			spriteReservations.Clear();
-			frameReservations.Clear();
+			spriteReservations.TrimExcess();
 			reservationsByFilename.Clear();
+			reservationsByFilename.TrimExcess();
+
+			// When the sheet builder is adding sprites, it reserves height for the tallest sprite seen along the row.
+			// We can achieve better sheet packing by keeping sprites with similar heights together.
+			var orderedPendingResolve = pendingResolve.OrderBy(x => x.Frame.Size.Height);
+
+			var spriteCache = new Dictionary<(
+				string Filename,
+				int FrameIndex,
+				bool Premultiplied,
+				Func<ISpriteFrame, ISpriteFrame> AdjustFrame),
+				Sprite>(pendingResolve.Count);
+			foreach (var (filename, frameIndex, premultiplied, adjustFrame, frame, spritesForToken) in orderedPendingResolve)
+			{
+				// Premultiplied and non-premultiplied sprites must be cached separately
+				// to cover the case where the same image is requested in both versions.
+				spritesForToken[frameIndex] = spriteCache.GetOrAdd(
+					(filename, frameIndex, premultiplied, adjustFrame),
+					_ =>
+					{
+						var sheetBuilder = SheetBuilders[SheetBuilder.FrameTypeToSheetType(frame.Type)];
+						return sheetBuilder.Add(frame, premultiplied);
+					});
+
+				modData.LoadScreen?.Display();
+			}
 
 			foreach (var sb in SheetBuilders.Values)
 				sb.Current.ReleaseBuffer();
@@ -151,18 +148,11 @@ namespace OpenRA.Graphics
 
 		public Sprite[] ResolveSprites(int token)
 		{
-			var resolved = resolvedSprites[token];
-			resolvedSprites.Remove(token);
-			if (missingFiles.TryGetValue(token, out var r))
-				throw new FileNotFoundException($"{r.Location}: {r.Filename} not found", r.Filename);
+			if (!resolvedSprites.Remove(token, out var resolved))
+				throw new InvalidOperationException($"{nameof(token)} {token} has either already been resolved, or was never reserved via {nameof(ReserveSprites)}");
 
-			return resolved;
-		}
+			resolvedSprites.TrimExcess();
 
-		public ISpriteFrame[] ResolveFrames(int token)
-		{
-			var resolved = resolvedFrames[token];
-			resolvedFrames.Remove(token);
 			if (missingFiles.TryGetValue(token, out var r))
 				throw new FileNotFoundException($"{r.Location}: {r.Filename} not found", r.Filename);
 
