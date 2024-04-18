@@ -187,7 +187,7 @@ namespace OpenRA.Mods.CA.Traits
 				var hullDamage = new Damage(excessDamage, damageTypes);
 
 				if (health != null)
-					health.InflictDamage(self, e.Attacker, hullDamage, true);
+					health.InflictDamage(self, e.Attacker, hullDamage, false);
 			}
 		}
 
