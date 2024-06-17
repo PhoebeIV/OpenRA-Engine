@@ -140,7 +140,9 @@ namespace OpenRA.Mods.CA.Traits
 				return;
 
 			if ((strength == 0 && e.Damage.Value > 0) || e.Damage.Value == 0 || e.Attacker == self)
-				return;
+			{
+				ResetRegen(); return;
+			}
 
 			var damageAmt = Convert.ToInt32(e.Damage.Value / 0.01);
 			var excessDamage = damageAmt - strength;

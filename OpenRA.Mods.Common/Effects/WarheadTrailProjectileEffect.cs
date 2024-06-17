@@ -89,7 +89,7 @@ namespace OpenRA.Mods.Common.Effects
 			var at = (float)ticks / (lifespan - 1);
 			var attitude = WAngle.Zero.Tan() * (1 - 2 * at) / (4 * 1024);
 
-			var u = (facing.Angle % 512) / 512f;
+			var u = facing.Angle % 512 / 512f;
 			var scale = 2048 * u * (1 - u);
 
 			var effective = (int)(facing.Angle < 512
