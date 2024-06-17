@@ -304,7 +304,9 @@ namespace OpenRA.Mods.Common.Traits
 					if (attackStances != PlayerRelationship.None)
 					{
 						var range = Info.ScanRadius > 0 ? WDist.FromCells(Info.ScanRadius) : ab.GetMaximumRange();
-						return ChooseTarget(self, ab, attackStances, range, allowMove, allowTurn);
+						var target = ChooseTarget(self, ab, attackStances, range, allowMove, allowTurn);
+						if (target.Type != TargetType.Invalid)
+							return target;
 					}
 				}
 			}
