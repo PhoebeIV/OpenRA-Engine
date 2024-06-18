@@ -42,7 +42,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				palette.PickUpCompletedBuilding();
 			}
 
-			button.IsDisabled = () => !queues.Any(q => q.AnyItemsToBuild());
+			button.IsDisabled = () => !queues.Any(q => q.BuildableItems().Any());
 			button.OnMouseUp = mi => SelectTab(mi.Modifiers.HasModifier(Modifiers.Shift));
 			button.OnKeyPress = e => SelectTab(e.Modifiers.HasModifier(Modifiers.Shift));
 			button.OnClick = () => SelectTab(false);
