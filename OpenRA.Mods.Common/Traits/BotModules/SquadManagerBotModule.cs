@@ -125,7 +125,6 @@ namespace OpenRA.Mods.Common.Traits
 		readonly HashSet<Actor> activeUnits = new();
 
 		public List<Squad> Squads = new();
-		readonly Stack<Squad> squadsPendingUpdate = new();
 		readonly ActorIndex.NamesAndTrait<Building> constructionYardBuildings;
 
 		IBot bot;
@@ -348,16 +347,7 @@ namespace OpenRA.Mods.Common.Traits
 			{
 				attackForceTicks = Info.AttackForceInterval;
 				foreach (var s in Squads)
-					squadsPendingUpdate.Push(s);
-			}
-
-			// PERF: Spread out squad updates across multiple ticks.
-			var updateCount = Exts.IntegerDivisionRoundingAwayFromZero(squadsPendingUpdate.Count, attackForceTicks);
-			for (var i = 0; i < updateCount; i++)
-			{
-				var squadPendingUpdate = squadsPendingUpdate.Pop();
-				if (squadPendingUpdate.IsValid)
-					squadPendingUpdate.Update();
+					s.Update();
 			}
 
 			if (--assignRolesTicks <= 0)
