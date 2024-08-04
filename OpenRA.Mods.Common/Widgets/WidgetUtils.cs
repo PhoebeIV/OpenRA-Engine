@@ -20,7 +20,8 @@ namespace OpenRA.Mods.Common.Widgets
 {
 	public static class WidgetUtils
 	{
-		public static string GetStatefulImageName(string baseName, bool disabled = false, bool pressed = false, bool hover = false, bool focused = false)
+		public static string GetStatefulImageName(
+			string baseName, bool disabled = false, bool pressed = false, bool hover = false, bool focused = false)
 		{
 			var suffix = disabled ? "-disabled" :
 				focused ? "-focused" :
@@ -31,7 +32,8 @@ namespace OpenRA.Mods.Common.Widgets
 			return baseName + suffix;
 		}
 
-		public static CachedTransform<(bool Disabled, bool Pressed, bool Hover, bool Focused, bool Highlighted), Sprite> GetCachedStatefulImage(string collection, string imageName)
+		public static CachedTransform<(bool Disabled, bool Pressed, bool Hover, bool Focused, bool Highlighted), Sprite>
+			GetCachedStatefulImage(string collection, string imageName)
 		{
 			return new CachedTransform<(bool, bool, bool, bool, bool), Sprite>(
 				((bool Disabled, bool Pressed, bool Hover, bool Focused, bool Highlighted) args) =>
@@ -43,7 +45,8 @@ namespace OpenRA.Mods.Common.Widgets
 		}
 
 		// TODO: refactor buttons and related UI to use this function
-		public static CachedTransform<(bool Disabled, bool Pressed, bool Hover, bool Focused, bool Highlighted), Sprite[]> GetCachedStatefulPanelImages(string collection)
+		public static CachedTransform<(bool Disabled, bool Pressed, bool Hover, bool Focused, bool Highlighted), Sprite[]>
+			GetCachedStatefulPanelImages(string collection)
 		{
 			return new CachedTransform<(bool, bool, bool, bool, bool), Sprite[]>(
 				((bool Disabled, bool Pressed, bool Hover, bool Focused, bool Highlighted) args) =>
@@ -391,68 +394,6 @@ namespace OpenRA.Mods.Common.Widgets
 			}
 
 			notificationWidget.Bounds.Width = boxWidth - notificationWidget.Bounds.X;
-		}
-	}
-
-	public class CachedTransform<T, U>
-	{
-		readonly Func<T, U> transform;
-
-		bool initialized;
-		T lastInput;
-		U lastOutput;
-
-		public CachedTransform(Func<T, U> transform)
-		{
-			this.transform = transform;
-		}
-
-		public U Update(T input)
-		{
-			if (initialized && ((input == null && lastInput == null) || (input != null && input.Equals(lastInput))))
-				return lastOutput;
-
-			lastInput = input;
-			lastOutput = transform(input);
-			initialized = true;
-
-			return lastOutput;
-		}
-	}
-
-	public class PredictedCachedTransform<T, U>
-	{
-		readonly Func<T, U> transform;
-
-		bool initialized;
-		T lastInput;
-		U lastOutput;
-
-		bool predicted;
-		U prediction;
-
-		public PredictedCachedTransform(Func<T, U> transform)
-		{
-			this.transform = transform;
-		}
-
-		public void Predict(U value)
-		{
-			predicted = true;
-			prediction = value;
-		}
-
-		public U Update(T input)
-		{
-			if ((predicted || initialized) && ((input == null && lastInput == null) || (input != null && input.Equals(lastInput))))
-				return predicted ? prediction : lastOutput;
-
-			predicted = false;
-			initialized = true;
-			lastInput = input;
-			lastOutput = transform(input);
-
-			return lastOutput;
 		}
 	}
 }
