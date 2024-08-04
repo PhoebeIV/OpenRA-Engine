@@ -166,7 +166,8 @@ namespace OpenRA.Traits
 						return terrainCenterPosition;
 					case TargetType.Invalid:
 					default:
-						throw new InvalidOperationException("Attempting to query the position of an invalid Target");
+						return terrainCenterPosition;
+						// throw new InvalidOperationException("Attempting to query the position of an invalid Target");
 				}
 			}
 		}
