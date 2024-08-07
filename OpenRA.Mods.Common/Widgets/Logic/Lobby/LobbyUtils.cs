@@ -75,7 +75,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				foreach (var b in map.PlayerActorInfo.TraitInfos<IBotInfo>())
 				{
 					var botController = orderManager.LobbyInfo.Clients.FirstOrDefault(c => c.IsAdmin);
-					bots.Add(new SlotDropDownOption(b.Name,
+					bots.Add(new SlotDropDownOption(TranslationProvider.GetString(b.Name),
 						$"slot_bot {slot.PlayerReference} {botController.Index} {b.Type}",
 						() => client != null && client.Bot == b.Type));
 				}
@@ -354,27 +354,32 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		public static void SetupProfileWidget(Widget parent, Session.Client c, OrderManager orderManager, WorldRenderer worldRenderer)
 		{
-			var visible = c != null && c.Bot == null;
 			var profile = parent.GetOrNull<ImageWidget>("PROFILE");
 			if (profile != null)
 			{
-				var imageName = (c != null && c.IsAdmin ? "admin-" : "player-")
-					+ (c.Fingerprint != null ? "registered" : "anonymous");
+				var imageName = c.IsBot ? "bot" :
+					c.IsAdmin ? "admin-" :
+						"player-";
+
+				if (!c.IsBot)
+					imageName += c.Fingerprint != null ? "registered" : "anonymous";
 
 				profile.GetImageName = () => imageName;
-				profile.IsVisible = () => visible;
+				profile.IsVisible = () => true;
 			}
 
 			var profileTooltip = parent.GetOrNull<ClientTooltipRegionWidget>("PROFILE_TOOLTIP");
 			if (profileTooltip != null)
 			{
-				if (c != null && c.Fingerprint != null)
+				if (c.Fingerprint != null)
 					profileTooltip.Template = "REGISTERED_PLAYER_TOOLTIP";
 
-				if (visible)
-					profileTooltip.Bind(orderManager, worldRenderer, c);
+				if (c.IsBot)
+					profileTooltip.Template = "BOT_TOOLTIP";
 
-				profileTooltip.IsVisible = () => visible;
+				profileTooltip.Bind(orderManager, worldRenderer, c);
+
+				profileTooltip.IsVisible = () => true;
 			}
 		}
 
@@ -422,11 +427,12 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		public static void SetupNameWidget(Widget parent, Session.Client c, OrderManager orderManager, WorldRenderer worldRenderer)
 		{
-			var name = parent.Get<LabelWidget>("NAME");
-			name.IsVisible = () => true;
-			var font = Game.Renderer.Fonts[name.Font];
-			var label = WidgetUtils.TruncateText(c.Name, name.Bounds.Width, font);
-			name.GetText = () => label;
+			var label = parent.Get<LabelWidget>("NAME");
+			label.IsVisible = () => true;
+			var font = Game.Renderer.Fonts[label.Font];
+			var name = c.IsBot ? TranslationProvider.GetString(c.Name) : c.Name;
+			var text = WidgetUtils.TruncateText(name, label.Bounds.Width, font);
+			label.GetText = () => text;
 
 			SetupProfileWidget(parent, c, orderManager, worldRenderer);
 		}
@@ -444,7 +450,10 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			var closed = TranslationProvider.GetString(Closed);
 			var open = TranslationProvider.GetString(Open);
-			slot.GetText = () => truncated.Update(c != null ? c.Name : s.Closed ? closed : open);
+			slot.GetText = () => truncated.Update(c != null ?
+				c.IsBot ? TranslationProvider.GetString(c.Name) : c.Name
+					: s.Closed ? closed : open);
+
 			slot.OnMouseDown = _ => ShowSlotDropDown(slot, s, c, orderManager, map, modData);
 
 			// Ensure Name selector (if present) is hidden
