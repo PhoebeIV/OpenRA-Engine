@@ -1,4 +1,4 @@
-﻿#region Copyright & License Information
+#region Copyright & License Information
 /*
  * Copyright (c) The OpenRA Developers and Contributors
  * This file is part of OpenRA, which is free software. It is made
@@ -13,20 +13,20 @@ using System.Collections.Generic;
 
 namespace OpenRA.Mods.Common.UpdateRules.Rules
 {
-	public class AddMarkerLayerOverlay : UpdateRule
+	public class RenameOnDeath : UpdateRule
 	{
-		public override string Name => "Add MarkerLayerOverlay.";
+		public override string Name => "Rename Explodes to FireWarheadOnDeath and ThrowsShrapnel to FireProjectilesOnDeath.";
 
 		public override string Description =>
-			"Add MarkerLayerOverlay to editor.";
+			" The Explodes trait was renamed to FireWarheadsOnDeath." +
+			" The ThrowsShrapnel trait was renamed to FireProjectilesOnDeath.";
 
 		public override IEnumerable<string> UpdateActorNode(ModData modData, MiniYamlNodeBuilder actorNode)
 		{
-			if (!actorNode.KeyMatches("EditorWorld") || actorNode.LastChildMatching("MarkerLayerOverlay") != null)
-				yield break;
+			actorNode.RenameChildrenMatching("Explodes", "FireWarheadsOnDeath");
+			actorNode.RenameChildrenMatching("ThrowsShrapnel", "FireProjectilesOnDeath");
 
-			var markerLayerOverlayNode = new MiniYamlNodeBuilder("MarkerLayerOverlay", new MiniYamlBuilder(""));
-			actorNode.AddNode(markerLayerOverlayNode);
+			yield break;
 		}
 	}
 }
