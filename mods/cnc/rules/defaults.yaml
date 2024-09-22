@@ -253,7 +253,7 @@
 	AttackMove:
 	WithDamageOverlay:
 	WithFacingSpriteBody:
-	Explodes:
+	FireWarheadsOnDeath:
 		Weapon: UnitExplodeSmall
 		EmptyWeapon: UnitExplodeSmall
 	Guard:
@@ -308,7 +308,7 @@
 		Type: GroundPosition
 	ActorLostNotification:
 		TextNotification: notification-unit-lost
-	Explodes:
+	FireWarheadsOnDeath:
 		Weapon: HeliExplode
 		EmptyWeapon: HeliExplode
 	AttackMove:
@@ -660,7 +660,7 @@
 		TextNotification: notification-unit-lost
 	AttackMove:
 	WithDamageOverlay:
-	Explodes:
+	FireWarheadsOnDeath:
 		Weapon: UnitExplodeShip
 		EmptyWeapon: UnitExplodeShip
 	Guard:
@@ -697,7 +697,7 @@
 		DamagedSounds: xplobig4.aud
 		DestroyedSounds: crumble.aud, xplobig4.aud
 	WithSpriteBody:
-	Explodes:
+	FireWarheadsOnDeath:
 		Type: Footprint
 		Weapon: BuildingExplode
 		EmptyWeapon: BuildingExplode
@@ -800,7 +800,7 @@
 		Types: building
 	CaptureNotification:
 		Notification: CivilianBuildingCaptured
-		TextNotification: notification-civilian-building-captured
+		TextNotification: notification-civ-building-captured
 	RepairableBuilding:
 		RepairPercent: 40
 		RepairStep: 1400
@@ -827,7 +827,7 @@
 	Interactable:
 	Tooltip:
 		GenericName: meta-civfield-generic-name
-	-Explodes:
+	-FireWarheadsOnDeath:
 	-ShakeOnDeath:
 	-SoundOnDamageTransition:
 	-Demolishable:
@@ -843,12 +843,12 @@
 		Condition: winter
 		TileSets: SNOW, WINTER
 	Tooltip@WINTER:
-		Name: meta-civhaystackorigloo.winter--name
+		Name: meta-civhaystackorigloo.winter-name
 		RequiresCondition: winter
 		GenericVisibility: None
 		ShowOwnerRow: false
 	Tooltip@SUMMER:
-		Name: meta-civhaystackorigloo.summer--name
+		Name: meta-civhaystackorigloo.summer-name
 		RequiresCondition: !winter
 		GenericVisibility: None
 		ShowOwnerRow: false
@@ -879,12 +879,12 @@
 		Condition: winter
 		TileSets: SNOW, WINTER
 	Tooltip@WINTER:
-		Name: meta-civhaystackorigloohusk.winter--name
+		Name: meta-civhaystackorigloohusk.winter-name
 		RequiresCondition: winter
 		GenericVisibility: None
 		ShowOwnerRow: false
 	Tooltip@SUMMER:
-		Name: meta-civhaystackorigloohusk.summer--name
+		Name: meta-civhaystackorigloohusk.summer-name
 		RequiresCondition: !winter
 		GenericVisibility: None
 		ShowOwnerRow: false
@@ -1082,7 +1082,7 @@
 	WithColoredOverlay@IDISABLE:
 		Color: 000000B4
 	ScriptTriggers:
-	Explodes:
+	FireWarheadsOnDeath:
 		Weapon: UnitExplodeSmall
 		EmptyWeapon: UnitExplodeSmall
 	WithIdleOverlay@Burns:

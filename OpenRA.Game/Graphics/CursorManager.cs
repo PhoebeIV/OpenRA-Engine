@@ -11,11 +11,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using OpenRA.Primitives;
 
 namespace OpenRA.Graphics
 {
-	public sealed class CursorManager
+	public sealed class CursorManager : IDisposable
 	{
 		sealed class Cursor
 		{
@@ -38,13 +39,16 @@ namespace OpenRA.Graphics
 		readonly bool hardwareCursorsDisabled = false;
 		bool hardwareCursorsDoubled = false;
 
-		public CursorManager(CursorProvider cursorProvider)
+		public CursorManager(CursorProvider cursorProvider, int cursorSheetSize)
 		{
 			hardwareCursorsDisabled = Game.Settings.Graphics.DisableHardwareCursors;
 
 			graphicSettings = Game.Settings.Graphics;
-			sheetBuilder = new SheetBuilder(SheetType.BGRA);
-			foreach (var kv in cursorProvider.Cursors)
+			sheetBuilder = new SheetBuilder(SheetType.BGRA, cursorSheetSize);
+
+			// Sort the cursors for better packing onto the sheet.
+			foreach (var kv in cursorProvider.Cursors
+				.OrderBy(kvp => kvp.Value.Frames.Max(f => f.Size.Height)))
 			{
 				var frames = kv.Value.Frames;
 				var palette = !string.IsNullOrEmpty(kv.Value.Palette) ? cursorProvider.Palettes[kv.Value.Palette] : null;
@@ -91,10 +95,6 @@ namespace OpenRA.Graphics
 			}
 
 			CreateOrUpdateHardwareCursors();
-
-			foreach (var s in sheetBuilder.AllSheets)
-				s.ReleaseBuffer();
-
 			Update();
 		}
 
@@ -127,6 +127,8 @@ namespace OpenRA.Graphics
 					}
 				}
 			}
+
+			sheetBuilder.Current.ReleaseBuffer();
 
 			hardwareCursorsDoubled = graphicSettings.CursorDouble;
 		}

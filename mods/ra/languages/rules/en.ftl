@@ -175,8 +175,8 @@ meta-ammobox-name = Ammo Box
 meta-civfield-name = Field
 
 meta-civhaystackorigloo =
-   .winter--name = Igloo
-   .summer--name = Haystacks
+   .winter-name = Igloo
+   .summer-name = Haystacks
 
 meta-tree-name = Tree
 meta-treehusk-name = Tree (Burnt)
@@ -466,7 +466,7 @@ notification-chronosphere-charging = Chronosphere charging.
 notification-chronosphere-ready = Chronosphere ready.
 notification-satellite-launched = Satellite launched.
 notification-credits-stolen = Credits stolen.
-notifcation-spy-plane-ready = Spy plane ready.
+notification-spy-plane-ready = Spy plane ready.
 
 actor-mslo =
    .name = Missile Silo
@@ -849,3 +849,16 @@ actor-powerproxy-paratroopers =
    .name = Paratroopers
    .description = A Badger drops a squad of infantry
     anywhere on the map.
+
+## ai.yaml
+bot-rush-ai =
+   .name = Rush AI
+
+bot-normal-ai =
+   .name = Normal AI
+
+bot-turtle-ai =
+   .name = Turtle AI
+
+bot-naval-ai =
+   .name = Naval AI
