@@ -119,6 +119,12 @@ namespace OpenRA.Mods.Common.Traits
 			checkTerrainType = info.UnloadTerrainTypes.Count > 0;
 
 			var runtimeCargoInit = init.GetOrDefault<RuntimeCargoInit>(info);
+			var cargoInit = init.GetOrDefault<CargoInit>(info);
+			if (runtimeCargoInit != null)
+			{
+				cargo = runtimeCargoInit.Value.ToList();
+				totalWeight = cargo.Sum(c => GetWeight(c));
+			}
 			else if (cargoInit != null)
 			{
 				foreach (var u in cargoInit.Value)

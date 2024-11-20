@@ -104,8 +104,6 @@ namespace OpenRA.Mods.AS.Traits
 			if (destination != null && destination.Value != location)
 				ticksTillCheck = 0;
 
-			dockFacing = refineryActor.Trait<IDockHost>().DockAngle;
-
 			destination = location;
 		}
 

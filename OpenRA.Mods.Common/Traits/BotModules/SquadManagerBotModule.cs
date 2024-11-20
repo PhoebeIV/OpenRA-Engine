@@ -125,7 +125,7 @@ namespace OpenRA.Mods.Common.Traits
 		readonly HashSet<Actor> activeUnits = new();
 
 		public List<Squad> Squads = new();
-		readonly ActorIndex.NamesAndTrait<Building> constructionYardBuildings;
+		readonly ActorIndex.NamesAndTrait<BuildingInfo> constructionYardBuildings;
 
 		IBot bot;
 		IBotPositionsUpdated[] notifyPositionsUpdated;
