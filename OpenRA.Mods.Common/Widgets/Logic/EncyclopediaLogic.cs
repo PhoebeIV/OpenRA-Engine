@@ -11,7 +11,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using OpenRA.FileFormats;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Mods.Common.Traits.Render;
@@ -22,10 +24,15 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 {
 	public class EncyclopediaLogic : ChromeLogic
 	{
+		[FluentReference("prerequisites")]
+		const string Requires = "label-requires";
+
 		readonly World world;
 		readonly ModData modData;
+		readonly Dictionary<ActorInfo, EncyclopediaInfo> info = new();
 
 		readonly ScrollPanelWidget descriptionPanel;
+		readonly LabelWidget titleLabel;
 		readonly LabelWidget descriptionLabel;
 		readonly SpriteFont descriptionFont;
 
@@ -33,6 +40,16 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		readonly ScrollItemWidget headerTemplate;
 		readonly ScrollItemWidget template;
 		readonly ActorPreviewWidget previewWidget;
+
+		readonly SpriteWidget portraitWidget;
+		readonly Sprite portraitSprite;
+		readonly Png defaultPortrait;
+
+		readonly Widget productionContainer;
+		readonly LabelWidget productionCost;
+		readonly LabelWidget productionTime;
+		readonly Widget productionPowerIcon;
+		readonly LabelWidget productionPower;
 
 		ActorInfo selectedActor;
 		ScrollItemWidget firstItem;
@@ -54,34 +71,30 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			previewWidget.IsVisible = () => selectedActor != null;
 
 			descriptionPanel = widget.Get<ScrollPanelWidget>("ACTOR_DESCRIPTION_PANEL");
-
+			titleLabel = descriptionPanel.GetOrNull<LabelWidget>("ACTOR_TITLE");
 			descriptionLabel = descriptionPanel.Get<LabelWidget>("ACTOR_DESCRIPTION");
 			descriptionFont = Game.Renderer.Fonts[descriptionLabel.Font];
 
-			actorList.RemoveChildren();
-
-			var actorEncyclopediaPair = GetFilteredActorEncyclopediaPairs();
-			var categories = actorEncyclopediaPair.Select(a => a.Value.Category).Distinct().
-				OrderBy(string.IsNullOrWhiteSpace).ThenBy(s => s);
-			foreach (var category in categories)
+			portraitWidget = widget.GetOrNull<SpriteWidget>("ACTOR_PORTRAIT");
+			if (portraitWidget != null)
 			{
-				CreateActorGroup(category, actorEncyclopediaPair
-					.Where(a => a.Value.Category == category)
-					.OrderBy(a => a.Value.Order)
-					.Select(a => a.Key));
+				defaultPortrait = new Png(modData.DefaultFileSystem.Open("encyclopedia/default.png"));
+				var spriteBounds = new Rectangle(0, 0, defaultPortrait.Width, defaultPortrait.Height);
+				var sheet = new Sheet(SheetType.BGRA, spriteBounds.Size.NextPowerOf2());
+				sheet.CreateBuffer();
+				sheet.GetTexture().ScaleFilter = TextureScaleFilter.Linear;
+				portraitSprite = new Sprite(sheet, spriteBounds, TextureChannel.RGBA);
+				portraitWidget.GetSprite = () => portraitSprite;
 			}
 
-			widget.Get<ButtonWidget>("BACK_BUTTON").OnClick = () =>
-			{
-				Game.Disconnect();
-				Ui.CloseWindow();
-				onExit();
-			};
-		}
+			actorList.RemoveChildren();
 
-		IReadOnlyCollection<KeyValuePair<ActorInfo, EncyclopediaInfo>> GetFilteredActorEncyclopediaPairs()
-		{
-			var actors = new List<KeyValuePair<ActorInfo, EncyclopediaInfo>>();
+			productionContainer = descriptionPanel.GetOrNull("ACTOR_PRODUCTION");
+			productionCost = productionContainer?.Get<LabelWidget>("COST");
+			productionTime = productionContainer?.Get<LabelWidget>("TIME");
+			productionPowerIcon = productionContainer?.Get("POWER_ICON");
+			productionPower = productionContainer?.Get<LabelWidget>("POWER");
+
 			foreach (var actor in modData.DefaultRules.Actors.Values)
 			{
 				if (actor.TraitInfos<IRenderActorPreviewSpritesInfo>().Count == 0)
@@ -95,10 +108,26 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				if (encyclopedia == null)
 					continue;
 
-				actors.Add(new KeyValuePair<ActorInfo, EncyclopediaInfo>(actor, encyclopedia));
+				info.Add(actor, encyclopedia);
 			}
 
-			return actors;
+			var categories = info.Select(a => a.Value.Category).Distinct().
+				OrderBy(string.IsNullOrWhiteSpace).ThenBy(s => s);
+
+			foreach (var category in categories)
+			{
+				CreateActorGroup(category, info
+					.Where(a => a.Value.Category == category)
+					.OrderBy(a => a.Value.Order)
+					.Select(a => a.Key));
+			}
+
+			widget.Get<ButtonWidget>("BACK_BUTTON").OnClick = () =>
+			{
+				Game.Disconnect();
+				Ui.CloseWindow();
+				onExit();
+			};
 		}
 
 		void CreateActorGroup(string title, IEnumerable<ActorInfo> actors)
@@ -116,7 +145,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				var label = item.Get<LabelWithTooltipWidget>("TITLE");
 				var name = actor.TraitInfos<TooltipInfo>().FirstOrDefault(info => info.EnabledByDefault)?.Name;
 				if (!string.IsNullOrEmpty(name))
-					WidgetUtils.TruncateLabelToTooltip(label, TranslationProvider.GetString(name));
+					WidgetUtils.TruncateLabelToTooltip(label, FluentProvider.GetMessage(name));
 
 				if (firstItem == null)
 				{
@@ -130,11 +159,16 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		void SelectActor(ActorInfo actor)
 		{
+			var selectedInfo = info[actor];
 			selectedActor = actor;
+
+			Player previewOwner = null;
+			if (!string.IsNullOrEmpty(selectedInfo.PreviewOwner))
+				previewOwner = world.Players.FirstOrDefault(p => p.InternalName == selectedInfo.PreviewOwner);
 
 			var typeDictionary = new TypeDictionary()
 			{
-				new OwnerInit(world.WorldActor.Owner),
+				new OwnerInit(previewOwner ?? world.WorldActor.Owner),
 				new FactionInit(world.WorldActor.Owner.PlayerReference.Faction)
 			};
 
@@ -143,23 +177,76 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					typeDictionary.Add(inits);
 
 			previewWidget.SetPreview(actor, typeDictionary);
+			previewWidget.GetScale = () => selectedInfo.Scale;
+
+			if (portraitWidget != null)
+			{
+				// PERF: Load individual portrait images directly, bypassing ChromeProvider,
+				// to avoid stalls when loading a single large sheet.
+				// Portrait images are required to all be the same size as the "default.png" image.
+				var portrait = defaultPortrait;
+				if (modData.DefaultFileSystem.TryOpen($"encyclopedia/{actor.Name}.png", out var s))
+				{
+					var p = new Png(s);
+					if (p.Width == defaultPortrait.Width && p.Height == defaultPortrait.Height)
+						portrait = p;
+					else
+					{
+						Log.Write("debug", $"Failed to parse load portrait image for {actor.Name}.");
+						Log.Write("debug", $"Expected size {defaultPortrait.Width}, {defaultPortrait.Height}, but found {p.Width}, {p.Height}.");
+					}
+				}
+
+				OpenRA.Graphics.Util.FastCopyIntoSprite(portraitSprite, portrait);
+				portraitSprite.Sheet.CommitBufferedData();
+			}
+
+			if (titleLabel != null)
+				titleLabel.Text = ActorName(modData.DefaultRules, actor.Name);
+
+			var bi = actor.TraitInfoOrDefault<BuildableInfo>();
+
+			if (productionContainer != null && bi != null && !selectedInfo.HideBuildable)
+			{
+				productionContainer.Visible = true;
+				var cost = actor.TraitInfoOrDefault<ValuedInfo>()?.Cost ?? 0;
+
+				var time = BuildTime(selectedActor, selectedInfo.BuildableQueue);
+				productionTime.Text = WidgetUtils.FormatTime(time, world.Timestep);
+
+				var costText = cost.ToString(NumberFormatInfo.CurrentInfo);
+				productionCost.Text = costText;
+
+				var power = actor.TraitInfos<PowerInfo>().Where(i => i.EnabledByDefault).Sum(i => i.Amount);
+				if (power != 0)
+				{
+					productionPowerIcon.Visible = true;
+					productionPower.Visible = true;
+					productionPower.Text = power.ToString(NumberFormatInfo.CurrentInfo);
+				}
+				else
+				{
+					productionPowerIcon.Visible = false;
+					productionPower.Visible = false;
+				}
+			}
+			else if (productionContainer != null)
+				productionContainer.Visible = false;
 
 			var text = "";
-
-			var buildable = actor.TraitInfoOrDefault<BuildableInfo>();
-			if (buildable != null)
+			if (bi != null)
 			{
-				var prerequisites = buildable.Prerequisites
+				var prereqs = bi.Prerequisites
 					.Select(a => ActorName(modData.DefaultRules, a))
 					.Where(s => !s.StartsWith('~') && !s.StartsWith('!'))
 					.ToList();
-				if (prerequisites.Count != 0)
-					text += $"Requires {prerequisites.JoinWith(", ")}\n\n";
+
+				if (prereqs.Count != 0)
+					text += FluentProvider.GetMessage(Requires, "prerequisites", prereqs.JoinWith(", ")) + "\n\n";
 			}
 
-			var info = actor.TraitInfoOrDefault<EncyclopediaInfo>();
-			if (info != null && !string.IsNullOrEmpty(info.Description))
-				text += WidgetUtils.WrapText(TranslationProvider.GetString(info.Description) + "\n\n", descriptionLabel.Bounds.Width, descriptionFont);
+			if (selectedInfo != null && !string.IsNullOrEmpty(selectedInfo.Description))
+				text += WidgetUtils.WrapText(FluentProvider.GetMessage(selectedInfo.Description), descriptionLabel.Bounds.Width, descriptionFont);
 
 			var height = descriptionFont.Measure(text).Y;
 			descriptionLabel.GetText = () => text;
@@ -175,10 +262,47 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			{
 				var actorTooltip = actor.TraitInfos<TooltipInfo>().FirstOrDefault(info => info.EnabledByDefault);
 				if (actorTooltip != null)
-					return TranslationProvider.GetString(actorTooltip.Name);
+					return FluentProvider.GetMessage(actorTooltip.Name);
 			}
 
 			return name;
+		}
+
+		int BuildTime(ActorInfo info, string queue)
+		{
+			var bi = info.TraitInfoOrDefault<BuildableInfo>();
+
+			if (bi == null)
+				return 0;
+
+			var time = bi.BuildDuration;
+			if (time == -1)
+			{
+				var valued = info.TraitInfoOrDefault<ValuedInfo>();
+				if (valued == null)
+					return 0;
+				else
+					time = valued.Cost;
+			}
+
+			int pbi;
+			if (queue != null)
+			{
+				var pqueue = modData.DefaultRules.Actors.Values.SelectMany(a => a.TraitInfos<ProductionQueueInfo>()
+					.Where(x => x.Type == queue)).FirstOrDefault();
+
+				pbi = pqueue?.BuildDurationModifier ?? 100;
+			}
+			else
+			{
+				var pqueue = modData.DefaultRules.Actors.Values.SelectMany(a => a.TraitInfos<ProductionQueueInfo>()
+					.Where(x => bi.Queue.Contains(x.Type))).FirstOrDefault();
+
+				pbi = pqueue?.BuildDurationModifier ?? 100;
+			}
+
+			time = time * bi.BuildDurationModifier * pbi / 10000;
+			return time;
 		}
 	}
 }

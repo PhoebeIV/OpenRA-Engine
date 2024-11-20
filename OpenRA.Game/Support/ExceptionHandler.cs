@@ -26,13 +26,10 @@ namespace OpenRA
 			if (Game.EngineVersion != null)
 				Log.Write("exception", $"OpenRA engine version {Game.EngineVersion}");
 
-			if (Game.Settings != null && Game.Settings.Player != null && Game.Settings.Player.Language != null)
-				Log.Write("exception", $"OpenRA Language: {Game.Settings.Player.Language}");
-
 			if (Game.ModData != null)
 			{
-				var mod = Game.ModData.Manifest.Metadata;
-				Log.Write("exception", $"{mod.Title} mod version {mod.Version}");
+				var manifest = Game.ModData.Manifest;
+				Log.Write("exception", $"{manifest.Id} mod version {manifest.Metadata.Version}");
 			}
 
 			if (Game.OrderManager != null && Game.OrderManager.World != null && Game.OrderManager.World.Map != null)

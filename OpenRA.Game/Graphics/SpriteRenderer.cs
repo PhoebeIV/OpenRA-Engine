@@ -20,7 +20,7 @@ namespace OpenRA.Graphics
 	{
 		public const int SheetCount = 8;
 		static readonly string[] SheetIndexToTextureName = Exts.MakeArray(SheetCount, i => $"Texture{i}");
-		static readonly int UintSize = Marshal.SizeOf(typeof(uint));
+		static readonly int UintSize = Marshal.SizeOf<uint>();
 
 		readonly Renderer renderer;
 		readonly IShader shader;
@@ -253,9 +253,9 @@ namespace OpenRA.Graphics
 			shader.SetVec("DepthPreviewParams", contrast, offset);
 		}
 
-		public void SetAntialiasingPixelsPerTexel(float pxPerTx)
+		public void EnablePixelArtScaling(bool enabled)
 		{
-			shader.SetVec("AntialiasPixelsPerTexel", pxPerTx);
+			shader.SetBool("EnablePixelArtScaling", enabled);
 		}
 	}
 }

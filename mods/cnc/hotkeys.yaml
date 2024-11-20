@@ -1,24 +1,34 @@
-ProductionTypeBuilding: E
-	Description: Building Tab
+NextProductionTab: PAGEDOWN
+	Description: hotkey-description-nextproductiontab
 	Types: Production
-	Contexts: Player
+	Contexts: player
+
+PreviousProductionTab: PAGEUP
+	Description: hotkey-description-previousproductiontab
+	Types: Production
+	Contexts: player
+
+ProductionTypeBuilding: E
+	Description: hotkey-description-productiontypebuilding
+	Types: Production
+	Contexts: player
 
 ProductionTypeDefense: R
-	Description: Defense Tab
+	Description: hotkey-description-productiontypesupport
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeInfantry: T
-	Description: Infantry Tab
+	Description: hotkey-description-productiontypeinfantry
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeVehicle: Y
-	Description: Vehicle Tab
+	Description: hotkey-description-productiontypevehicle
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeAircraft: U
-	Description: Aircraft Tab
+	Description: hotkey-description-productiontypeaircraft
 	Types: Production
-	Contexts: Player
+	Contexts: player

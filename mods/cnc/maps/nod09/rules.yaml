@@ -5,7 +5,7 @@ World:
 		StartingMusic: march
 		VictoryMusic: nod_win1
 	MissionData:
-		Briefing: GDI is attempting to retake Egypt.\n\nUse every available resource in your efforts to stop them.\n\nThe populace has once again swayed in support of GDI forces, so show no mercy in dealing with the villagers.
+		Briefing: GDI is attempting to retake Egypt.\n\nUse every available resource to stop their advance.\n\nThe local populace has once again sided with GDI forces, so show no mercy to the villagers.
 		LossVideo: banner.vqa
 		BriefingVideo: nod9.vqa
 	SmudgeLayer@SCORCH:
@@ -66,7 +66,7 @@ EYE:
 
 GUN:
 	Buildable:
-		Queue: Defence.Nod
+		Queue: Support.Nod
 
 OBLI:
 	Buildable:
@@ -118,11 +118,11 @@ STNK:
 
 GTWR:
 	Buildable:
-		Queue: Defence.GDI
+		Queue: Support.GDI
 
 SBAG:
 	Buildable:
-		Queue: Defence.GDI, Defence.Nod
+		Queue: Support.GDI, Support.Nod
 
 HQ:
 	AirstrikePower:
