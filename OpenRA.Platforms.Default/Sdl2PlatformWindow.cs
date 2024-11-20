@@ -271,6 +271,10 @@ namespace OpenRA.Platforms.Default
 					SDL.SDL_GL_GetDrawableSize(Window, out var width, out var height);
 					surfaceSize = new Size(width, height);
 					windowScale = width * 1f / windowSize.Width;
+
+					// SDL expects OpenGL Context to be on the main thread on OSX by default.
+					// If this hint isn't set, window management calls will deadlock.
+					SDL.SDL_SetHint(SDL.SDL_HINT_MAC_OPENGL_ASYNC_DISPATCH, "1");
 				}
 				else
 					windowSize = new Size((int)(surfaceSize.Width / windowScale), (int)(surfaceSize.Height / windowScale));
@@ -337,15 +341,7 @@ namespace OpenRA.Platforms.Default
 			// Run graphics rendering on a dedicated thread.
 			// The calling thread will then have more time to process other tasks, since rendering happens in parallel.
 			// If the calling thread is the main game thread, this means it can run more logic and render ticks.
-			// This is disabled when running in windowed mode on Windows because it breaks the ability to minimize/restore the window.
-			if (Platform.CurrentPlatform == PlatformType.Windows && windowMode == WindowMode.Windowed)
-			{
-				var ctx = new Sdl2GraphicsContext(this);
-				ctx.InitializeOpenGL();
-				Context = ctx;
-			}
-			else
-				Context = new ThreadedGraphicsContext(new Sdl2GraphicsContext(this), vertexBatchSize, indexBatchSize);
+			Context = new ThreadedGraphicsContext(new Sdl2GraphicsContext(this), vertexBatchSize, indexBatchSize);
 
 			Context.SetVSyncEnabled(Game.Settings.Graphics.VSync);
 

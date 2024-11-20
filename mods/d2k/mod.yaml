@@ -1,26 +1,35 @@
 Metadata:
-	Title: Dune 2000
+	Title: mod-title
 	Version: {DEV_VERSION}
 	Website: https://www.openra.net
 	WebIcon32: https://www.openra.net/images/icons/d2k_32x32.png
-	WindowTitle: OpenRA - Dune 2000
+	WindowTitle: mod-windowtitle
 
 PackageFormats: D2kSoundResources
 
-Packages:
-	~^SupportDir|Content/d2k/v3/
-	~^SupportDir|Content/d2k/v3/GAMESFX
-	~^SupportDir|Content/d2k/v3/Movies
-	~^SupportDir|Content/d2k/v3/Music
-	^EngineDir
-	$d2k: d2k
-	^EngineDir|mods/common: common
-
-	~SOUND.RS
-	d2k|bits
-	d2k|scripts
-	common|scripts
-	d2k|uibits
+FileSystem: ContentInstallerFileSystem
+    Packages:
+		^EngineDir
+		$d2k: d2k
+		^EngineDir|mods/common: common
+		~^SupportDir|Content/d2k/v3/: content
+		d2k|scripts
+		common|scripts
+		d2k|uibits
+	ContentPackages:
+		content|SOUND.RS
+		content|GAMESFX
+		d2k|bits
+	ContentFiles:
+		content|DATA.R16
+		content|BLOXBASE.R16
+		content|BLOXBAT.R16
+		content|BLOXBGBS.R16
+		content|BLOXICE.R16
+		content|BLOXTREE.R16
+		content|BLOXWAST.R16
+		content|PALETTE.BIN
+	ContentInstallerMod: d2k-content
 
 MapFolders:
 	d2k|maps: System
@@ -62,10 +71,7 @@ Cursors:
 Chrome:
 	d2k|chrome.yaml
 
-Assemblies:
-	^BinDir|OpenRA.Mods.Common.dll
-	^BinDir|OpenRA.Mods.Cnc.dll
-	^BinDir|OpenRA.Mods.D2k.dll
+Assemblies: OpenRA.Mods.Common.dll, OpenRA.Mods.Cnc.dll, OpenRA.Mods.D2k.dll
 
 ChromeLayout:
 	common|chrome/ingame.yaml
@@ -123,14 +129,17 @@ ChromeLayout:
 	common|chrome/text-notifications.yaml
 	d2k|chrome/encyclopedia.yaml
 
-Translations:
-	common|languages/en.ftl
-	common|languages/chrome/en.ftl
-	common|languages/rules/en.ftl
-	d2k|languages/chrome/en.ftl
-	d2k|languages/rules/en.ftl
+FluentMessages:
+	common|fluent/common.ftl
+	common|fluent/chrome.ftl
+	common|fluent/hotkeys.ftl
+	common|fluent/rules.ftl
+	d2k|fluent/d2k.ftl
+	d2k|fluent/chrome.ftl
+	d2k|fluent/hotkeys.ftl
+	d2k|fluent/rules.ftl
 
-AllowUnusedTranslationsInExternalPackages: false
+AllowUnusedFluentMessagesInExternalPackages: false
 
 Weapons:
 	d2k|weapons/debris.yaml
@@ -163,7 +172,6 @@ LoadScreen: LogoStripeLoadScreen
 	Image: d2k|uibits/loadscreen.png
 	Image2x: d2k|uibits/loadscreen-2x.png
 	Image3x: d2k|uibits/loadscreen-3x.png
-	Text: Filling Crates..., Breeding Sandworms..., Fuelling carryalls..., Deploying harvesters..., Preparing thopters..., Summoning mentats...
 
 ServerTraits:
 	LobbyCommands
@@ -260,41 +268,6 @@ GameSpeeds:
 			Name: options-game-speed.fastest
 			Timestep: 20
 			OrderLatency: 6
-
-ModContent:
-	InstallPromptMessage: Dune 2000 requires artwork and audio from the original game.\n\nQuick Install will automatically download this content (without\nmusic or videos) from an online mirror of the game files.\n\nAdvanced Install includes options for copying the music, videos,\nand other content from an original game disc.
-	HeaderMessage: The original game content may be copied from an original game disc,\nor downloaded from an online mirror of the game files.
-	QuickDownload: quickinstall
-	Packages:
-		ContentPackage@base:
-			Title: Base Game Files
-			Identifier: base
-			TestFiles: ^SupportDir|Content/d2k/v3/BLOXBASE.R16, ^SupportDir|Content/d2k/v3/BLOXBAT.R16, ^SupportDir|Content/d2k/v3/BLOXBGBS.R16, ^SupportDir|Content/d2k/v3/BLOXICE.R16, ^SupportDir|Content/d2k/v3/BLOXTREE.R16, ^SupportDir|Content/d2k/v3/BLOXWAST.R16, ^SupportDir|Content/d2k/v3/SOUND.RS, ^SupportDir|Content/d2k/v3/PALETTE.BIN
-			Sources: d2k, gruntmods
-			Required: true
-			Download: basefiles
-		ContentPackage@patch:
-			Title: 1.06 Patch Content
-			Identifier: patch
-			TestFiles: ^SupportDir|Content/d2k/v3/DATA.R16
-			Sources: gruntmods
-			Required: true
-			Download: patch106
-		ContentPackage@music:
-			Title: Game Music
-			Identifier: music
-			TestFiles: ^SupportDir|Content/d2k/v3/Music/AMBUSH.AUD, ^SupportDir|Content/d2k/v3/Music/WAITGAME.AUD
-			Sources: d2k, gruntmods
-		ContentPackage@movies:
-			Title: Campaign Briefings
-			Identifier: movies
-			TestFiles: ^SupportDir|Content/d2k/v3/Movies/A_BR01_E.VQA
-			Sources: d2k
-	Downloads:
-		d2k|installer/downloads.yaml
-	Sources:
-		d2k|installer/d2k.yaml
-		d2k|installer/gruntmods.yaml
 
 DiscordService:
 	ApplicationId: 712711732770111550

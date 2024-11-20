@@ -1,54 +1,54 @@
 ProductionTypeBuilding: E
-	Description: Building Tab
+	Description: hotkey-description-productiontypebuilding
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeDefense: R
-	Description: Defense Tab
+	Description: hotkey-description-productiontypesupport
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeInfantry: T
-	Description: Infantry Tab
+	Description: hotkey-description-productiontypeinfantry
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeVehicle: Y
-	Description: Vehicle Tab
+	Description: hotkey-description-productiontypevehicle
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeAircraft: U
-	Description: Aircraft Tab
+	Description: hotkey-description-productiontypeaircraft
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 PowerDown: X
-	Description: Power-down mode
+	Description: hotkey-description-powerdown
 	Types: OrderGenerator
-	Contexts: Player
+	Contexts: player
 
 DecreaseDepthPreviewContrast: LEFTBRACKET SHIFT
-	Description: Decrease Contrast
+	Description: hotkey-description-decreasedepthpreviewcontrast
 	Types: DepthDebug
-	Contexts: Player
+	Contexts: player
 
 IncreaseDepthPreviewContrast: RIGHTBRACKET SHIFT
-	Description: Increase Contrast
+	Description: hotkey-description-increasedepthpreviewcontrast
 	Types: DepthDebug
-	Contexts: Player
+	Contexts: player
 
 DecreaseDepthPreviewOffset: SEMICOLON SHIFT
-	Description: Decrease Offset
+	Description: hotkey-description-decreasedepthpreviewoffset
 	Types: DepthDebug
-	Contexts: Player
+	Contexts: player
 
 IncreaseDepthPreviewOffset: QUOTE SHIFT
-	Description: Increase Offset
+	Description: hotkey-description-increasedepthpreviewoffset
 	Types: DepthDebug
-	Contexts: Player
+	Contexts: player
 
 ToggleDepthPreview: BACKSLASH SHIFT
-	Description: Toggle Preview
+	Description: hotkey-description-toggledepthpreview
 	Types: DepthDebug
-	Contexts: Player
+	Contexts: player

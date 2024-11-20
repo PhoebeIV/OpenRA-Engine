@@ -1,39 +1,39 @@
 ProductionTypeBuilding: E
-	Description: Building Tab
+	Description: hotkey-description-productiontypebuilding
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeUpgrade: R
-	Description: Upgrade Tab
+	Description: hotkey-description-productiontypeupgrade
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeInfantry: T
-	Description: Infantry Tab
+	Description: hotkey-description-productiontypeinfantry
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeVehicle: Y
-	Description: Vehicle Tab
+	Description: hotkey-description-productiontypevehicle
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeAircraft: U
-	Description: Aircraft Tab
+	Description: hotkey-description-productiontypeaircraft
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeTank: I
-	Description: Tank Tab
+	Description: hotkey-description-productiontypetank
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 ProductionTypeMerchant: O
-	Description: Starport Tab
+	Description: hotkey-description-productiontypemerchant
 	Types: Production
-	Contexts: Player
+	Contexts: player
 
 PowerDown: X
-	Description: Power-down mode
+	Description: hotkey-description-powerdown
 	Types: OrderGenerator
-	Contexts: Player
+	Contexts: player

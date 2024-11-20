@@ -45,12 +45,20 @@ namespace OpenRA
 
 	public class ModMetadata
 	{
-		public string Title;
-		public string Version;
-		public string Website;
-		public string WebIcon32;
-		public string WindowTitle;
-		public bool Hidden;
+		// FieldLoader used here, must matching naming in YAML.
+#pragma warning disable IDE1006 // Naming Styles
+		[FluentReference]
+		readonly string Title;
+		public readonly string Version;
+		public readonly string Website;
+		public readonly string WebIcon32;
+		[FluentReference]
+		readonly string WindowTitle;
+		public readonly bool Hidden;
+#pragma warning restore IDE1006 // Naming Styles
+
+		public string TitleTranslated => FluentProvider.GetMessage(Title);
+		public string WindowTitleTranslated => WindowTitle != null ? FluentProvider.GetMessage(WindowTitle) : null;
 	}
 
 	/// <summary>Describes what is to be loaded in order to run a mod.</summary>
@@ -61,30 +69,34 @@ namespace OpenRA
 		public readonly ModMetadata Metadata;
 		public readonly string[]
 			Rules, ServerTraits,
-			Sequences, ModelSequences, Cursors, Chrome, Assemblies, ChromeLayout,
-			Weapons, Voices, Notifications, Music, Translations, TileSets,
+			Sequences, ModelSequences, Cursors, Chrome, ChromeLayout,
+			Weapons, Voices, Notifications, Music, FluentMessages, TileSets,
 			ChromeMetrics, MapCompatibility, Missions, Hotkeys;
 
-		public readonly IReadOnlyDictionary<string, string> Packages;
 		public readonly IReadOnlyDictionary<string, string> MapFolders;
+		public readonly MiniYaml FileSystem;
 		public readonly MiniYaml LoadScreen;
 		public readonly string DefaultOrderGenerator;
 
+		public readonly string[] Assemblies = Array.Empty<string>();
 		public readonly string[] SoundFormats = Array.Empty<string>();
 		public readonly string[] SpriteFormats = Array.Empty<string>();
 		public readonly string[] PackageFormats = Array.Empty<string>();
 		public readonly string[] VideoFormats = Array.Empty<string>();
-		public readonly bool AllowUnusedTranslationsInExternalPackages = true;
 		public readonly int FontSheetSize = 512;
 		public readonly int CursorSheetSize = 512;
 
+		// TODO: This should be controlled by a user-selected translation bundle!
+		public readonly string FluentCulture = "en";
+		public readonly bool AllowUnusedFluentMessagesInExternalPackages = true;
+
 		readonly string[] reservedModuleNames =
 		{
-			"Include", "Metadata", "Folders", "MapFolders", "Packages", "Rules",
+			"Include", "Metadata", "FileSystem", "MapFolders", "Rules",
 			"Sequences", "ModelSequences", "Cursors", "Chrome", "Assemblies", "ChromeLayout", "Weapons",
-			"Voices", "Notifications", "Music", "Translations", "TileSets", "ChromeMetrics", "Missions", "Hotkeys",
+			"Voices", "Notifications", "Music", "FluentMessages", "TileSets", "ChromeMetrics", "Missions", "Hotkeys",
 			"ServerTraits", "LoadScreen", "DefaultOrderGenerator", "SupportsMapsFrom", "SoundFormats", "SpriteFormats", "VideoFormats",
-			"RequiresMods", "PackageFormats", "AllowUnusedTranslationsInExternalPackages", "FontSheetSize", "CursorSheetSize"
+			"RequiresMods", "PackageFormats", "AllowUnusedFluentMessagesInExternalPackages", "FontSheetSize", "CursorSheetSize"
 		};
 
 		readonly TypeDictionary modules = new();
@@ -122,21 +134,20 @@ namespace OpenRA
 			// TODO: Use fieldloader
 			MapFolders = YamlDictionary(yaml, "MapFolders");
 
-			if (yaml.TryGetValue("Packages", out var packages))
-				Packages = packages.ToDictionary(x => x.Value);
+			if (!yaml.TryGetValue("FileSystem", out FileSystem))
+				throw new InvalidDataException("`FileSystem` section is not defined.");
 
 			Rules = YamlList(yaml, "Rules");
 			Sequences = YamlList(yaml, "Sequences");
 			ModelSequences = YamlList(yaml, "ModelSequences");
 			Cursors = YamlList(yaml, "Cursors");
 			Chrome = YamlList(yaml, "Chrome");
-			Assemblies = YamlList(yaml, "Assemblies");
 			ChromeLayout = YamlList(yaml, "ChromeLayout");
 			Weapons = YamlList(yaml, "Weapons");
 			Voices = YamlList(yaml, "Voices");
 			Notifications = YamlList(yaml, "Notifications");
 			Music = YamlList(yaml, "Music");
-			Translations = YamlList(yaml, "Translations");
+			FluentMessages = YamlList(yaml, "FluentMessages");
 			TileSets = YamlList(yaml, "TileSets");
 			ChromeMetrics = YamlList(yaml, "ChromeMetrics");
 			Missions = YamlList(yaml, "Missions");
@@ -158,6 +169,9 @@ namespace OpenRA
 			if (yaml.TryGetValue("DefaultOrderGenerator", out entry))
 				DefaultOrderGenerator = entry.Value;
 
+			if (yaml.TryGetValue("Assemblies", out entry))
+				Assemblies = FieldLoader.GetValue<string[]>("Assemblies", entry.Value);
+
 			if (yaml.TryGetValue("PackageFormats", out entry))
 				PackageFormats = FieldLoader.GetValue<string[]>("PackageFormats", entry.Value);
 
@@ -170,9 +184,9 @@ namespace OpenRA
 			if (yaml.TryGetValue("VideoFormats", out entry))
 				VideoFormats = FieldLoader.GetValue<string[]>("VideoFormats", entry.Value);
 
-			if (yaml.TryGetValue("AllowUnusedTranslationsInExternalPackages", out entry))
-				AllowUnusedTranslationsInExternalPackages =
-					FieldLoader.GetValue<bool>("AllowUnusedTranslationsInExternalPackages", entry.Value);
+			if (yaml.TryGetValue("AllowUnusedFluentMessagesInExternalPackages", out entry))
+				AllowUnusedFluentMessagesInExternalPackages =
+					FieldLoader.GetValue<bool>("AllowUnusedFluentMessagesInExternalPackages", entry.Value);
 
 			if (yaml.TryGetValue("FontSheetSize", out entry))
 				FontSheetSize = FieldLoader.GetValue<int>("FontSheetSize", entry.Value);

@@ -59,7 +59,7 @@ namespace OpenRA.Mods.Common.Traits
 	[RequireExplicitImplementation]
 	public interface INotifyOrderIssued
 	{
-		bool OrderIssued(World world, Target target);
+		bool OrderIssued(World world, string orderString, Target target);
 	}
 
 	[RequireExplicitImplementation]
@@ -225,7 +225,7 @@ namespace OpenRA.Mods.Common.Traits
 		/// Does not check if <see cref="Traits.DockClientManager"/> is enabled.
 		/// Function should only be called from within <see cref="IDockClient"/> or <see cref="Traits.DockClientManager"/>.
 		/// </remarks>
-		bool IsDockingPossible(BitSet<DockType> type, bool forceEnter = false);
+		bool CanDock(BitSet<DockType> type, bool forceEnter = false);
 
 		/// <summary>Is this client allowed to dock to <paramref name="host"/>.</summary>
 		/// <remarks>
@@ -246,8 +246,6 @@ namespace OpenRA.Mods.Common.Traits
 		int ReservationCount { get; }
 		bool CanBeReserved { get; }
 		WPos DockPosition { get; }
-		int DockWait { get; }
-		WAngle DockAngle { get; }
 
 		/// <summary>Can this <paramref name="client"/> dock at this <see cref="IDockHost"/>.</summary>
 		/// <remarks>
@@ -267,13 +265,6 @@ namespace OpenRA.Mods.Common.Traits
 
 		/// <summary>Should be called when in range of <see cref="IDockHost"/>.</summary>
 		void QueueDockActivity(Activity moveToDockActivity, Actor self, Actor clientActor, DockClientManager client);
-	}
-
-	public interface IDockHostDrag
-	{
-		bool IsDragRequired { get; }
-		WVec DragOffset { get; }
-		int DragLength { get; }
 	}
 
 	public interface IDockClientManagerInfo : ITraitInfoInterface { }

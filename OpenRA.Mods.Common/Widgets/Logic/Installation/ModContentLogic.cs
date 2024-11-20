@@ -11,16 +11,51 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using OpenRA.FileSystem;
 using OpenRA.Widgets;
-using FS = OpenRA.FileSystem.FileSystem;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
 {
 	public class ModContentLogic : ChromeLogic
 	{
-		[TranslationReference]
+		[ObjectCreator.UseCtor]
+		public ModContentLogic(ModData modData)
+		{
+			var content = modData.Manifest.Get<ModContent>();
+			if (!IsModInstalled(content))
+			{
+				var widgetArgs = new WidgetArgs
+				{
+					{ "continueLoading", () => Game.RunAfterTick(() => Game.InitializeMod(content.Mod, new Arguments())) },
+					{ "content", content },
+				};
+
+				Ui.OpenWindow("CONTENT_PROMPT_PANEL", widgetArgs);
+			}
+			else
+			{
+				var widgetArgs = new WidgetArgs
+				{
+					{ "onCancel", () => Game.RunAfterTick(() => Game.InitializeMod(content.Mod, new Arguments())) },
+					{ "content", content },
+				};
+
+				Ui.OpenWindow("CONTENT_PANEL", widgetArgs);
+			}
+		}
+
+		static bool IsModInstalled(ModContent content)
+		{
+			return content.Packages
+				.Where(p => p.Value.Required)
+				.All(p => p.Value.TestFiles.All(f => File.Exists(Platform.ResolvePath(f))));
+		}
+	}
+
+	public class ModContentInstallerLogic : ChromeLogic
+	{
+		[FluentReference]
 		const string ManualInstall = "button-manual-install";
 
 		readonly ModContent content;
@@ -33,42 +68,25 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		bool sourceAvailable;
 
 		[ObjectCreator.UseCtor]
-		public ModContentLogic(Widget widget, Manifest mod, ModContent content, Action onCancel)
+		public ModContentInstallerLogic(ModData modData, Widget widget, ModContent content, Action onCancel)
 		{
 			this.content = content;
 
 			var panel = widget.Get("CONTENT_PANEL");
 
-			var modObjectCreator = new ObjectCreator(mod, Game.Mods);
-			var modPackageLoaders = modObjectCreator.GetLoaders<IPackageLoader>(mod.PackageFormats, "package");
-			var modFileSystem = new FS(mod.Id, Game.Mods, modPackageLoaders);
-			modFileSystem.LoadFromManifest(mod);
-
-			var sourceYaml = MiniYaml.Load(modFileSystem, content.Sources, null);
+			var sourceYaml = MiniYaml.Load(modData.DefaultFileSystem, content.Sources, null);
 			foreach (var s in sourceYaml)
-				sources.Add(s.Key, new ModContent.ModSource(s.Value, modObjectCreator));
+				sources.Add(s.Key, new ModContent.ModSource(s.Value));
 
-			var downloadYaml = MiniYaml.Load(modFileSystem, content.Downloads, null);
+			var downloadYaml = MiniYaml.Load(modData.DefaultFileSystem, content.Downloads, null);
 			foreach (var d in downloadYaml)
-				downloads.Add(d.Key, new ModContent.ModDownload(d.Value, modObjectCreator));
-
-			modFileSystem.UnmountAll();
+				downloads.Add(d.Key, new ModContent.ModDownload(d.Value));
 
 			scrollPanel = panel.Get<ScrollPanelWidget>("PACKAGES");
 			template = scrollPanel.Get<ContainerWidget>("PACKAGE_TEMPLATE");
-
-			var headerTemplate = panel.Get<LabelWidget>("HEADER_TEMPLATE");
-			var headerLines = !string.IsNullOrEmpty(content.HeaderMessage) ? content.HeaderMessage.Replace("\\n", "\n").Split('\n') : Array.Empty<string>();
-			var headerHeight = 0;
-			foreach (var l in headerLines)
-			{
-				var line = (LabelWidget)headerTemplate.Clone();
-				line.GetText = () => l;
-				line.Bounds.Y += headerHeight;
-				panel.AddChild(line);
-
-				headerHeight += headerTemplate.Bounds.Height;
-			}
+			var headerLabel = panel.Get<LabelWidget>("HEADER_LABEL");
+			headerLabel.IncreaseHeightToFitCurrentText();
+			var headerHeight = headerLabel.Bounds.Height;
 
 			panel.Bounds.Height += headerHeight;
 			panel.Bounds.Y -= headerHeight / 2;
@@ -81,7 +99,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			sourceButton.OnClick = () => Ui.OpenWindow("SOURCE_INSTALL_PANEL", new WidgetArgs
 			{
 				{ "sources", sources },
-				{ "content", content }
+				{ "content", content },
 			});
 
 			var backButton = panel.Get<ButtonWidget>("BACK_BUTTON");
@@ -105,7 +123,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			{
 				var container = template.Clone();
 				var titleWidget = container.Get<LabelWidget>("TITLE");
-				var title = p.Value.Title;
+				var title = FluentProvider.GetMessage(p.Value.Title);
 				titleWidget.GetText = () => title;
 
 				var requiredWidget = container.Get<LabelWidget>("REQUIRED");
@@ -140,7 +158,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				requiresSourceWidget.IsVisible = () => !installed && !downloadEnabled;
 				if (!isSourceAvailable)
 				{
-					var manualInstall = TranslationProvider.GetString(ManualInstall);
+					var manualInstall = FluentProvider.GetMessage(ManualInstall);
 					requiresSourceWidget.GetText = () => manualInstall;
 				}
 

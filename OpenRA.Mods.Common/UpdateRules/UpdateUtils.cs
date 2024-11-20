@@ -334,11 +334,13 @@ namespace OpenRA.Mods.Common.UpdateRules
 			return string.Join("\n", messages.Select(m => prefix + $" {separator} {m.Replace("\n", "\n   " + prefix)}"));
 		}
 
-		public static bool IsAlreadyTranslated(string translation)
+		public static bool IsAlreadyExtracted(string key)
 		{
-			if (translation == translation.ToLowerInvariant() && translation.Any(c => c == '-') && translation.All(c => c != ' '))
+#pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
+			if (key == key.ToLowerInvariant() && key.Any(c => c == '-') && key.All(c => c != ' '))
+#pragma warning restore CA1862
 			{
-				Console.WriteLine($"Skipping {translation} because it is already translated.");
+				Console.WriteLine($"Skipping {key} because it is already extracted.");
 				return true;
 			}
 

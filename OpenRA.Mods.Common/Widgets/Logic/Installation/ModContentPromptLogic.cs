@@ -12,48 +12,34 @@
 using System;
 using System.IO;
 using System.Linq;
-using OpenRA.FileSystem;
 using OpenRA.Widgets;
-using FS = OpenRA.FileSystem.FileSystem;
 
 namespace OpenRA.Mods.Common.Widgets.Logic
 {
 	public class ModContentPromptLogic : ChromeLogic
 	{
-		[TranslationReference]
+		[FluentReference]
 		const string Continue = "button-continue";
 
-		[TranslationReference]
+		[FluentReference]
 		const string Quit = "button-quit";
 
 		readonly ModContent content;
 		bool requiredContentInstalled;
 
 		[ObjectCreator.UseCtor]
-		public ModContentPromptLogic(ModData modData, Widget widget, Manifest mod, ModContent content, Action continueLoading)
+		public ModContentPromptLogic(ModData modData, Widget widget, ModContent content, Action continueLoading)
 		{
 			this.content = content;
 			CheckRequiredContentInstalled();
 
-			var continueMessage = TranslationProvider.GetString(Continue);
-			var quitMessage = TranslationProvider.GetString(Quit);
+			var continueMessage = FluentProvider.GetMessage(Continue);
+			var quitMessage = FluentProvider.GetMessage(Quit);
 
 			var panel = widget.Get("CONTENT_PROMPT_PANEL");
-			var headerTemplate = panel.Get<LabelWidget>("HEADER_TEMPLATE");
-			var headerLines =
-				!string.IsNullOrEmpty(content.InstallPromptMessage)
-					? content.InstallPromptMessage.Replace("\\n", "\n").Split('\n')
-					: Array.Empty<string>();
-			var headerHeight = 0;
-			foreach (var l in headerLines)
-			{
-				var line = (LabelWidget)headerTemplate.Clone();
-				line.GetText = () => l;
-				line.Bounds.Y += headerHeight;
-				panel.AddChild(line);
-
-				headerHeight += headerTemplate.Bounds.Height;
-			}
+			var headerLabel = panel.Get<LabelWidget>("HEADER_LABEL");
+			headerLabel.IncreaseHeightToFitCurrentText();
+			var headerHeight = headerLabel.Bounds.Height;
 
 			panel.Bounds.Height += headerHeight;
 			panel.Bounds.Y -= headerHeight / 2;
@@ -64,9 +50,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			{
 				Ui.OpenWindow("CONTENT_PANEL", new WidgetArgs
 				{
-					{ "mod", mod },
+					{ "onCancel", CheckRequiredContentInstalled },
 					{ "content", content },
-					{ "onCancel", CheckRequiredContentInstalled }
 				});
 			};
 
@@ -75,21 +60,14 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			quickButton.Bounds.Y += headerHeight;
 			quickButton.OnClick = () =>
 			{
-				var modObjectCreator = new ObjectCreator(mod, Game.Mods);
-				var modPackageLoaders = modObjectCreator.GetLoaders<IPackageLoader>(mod.PackageFormats, "package");
-				var modFileSystem = new FS(mod.Id, Game.Mods, modPackageLoaders);
-				modFileSystem.LoadFromManifest(mod);
-
-				var downloadYaml = MiniYaml.Load(modFileSystem, content.Downloads, null);
-				modFileSystem.UnmountAll();
-
+				var downloadYaml = MiniYaml.Load(modData.DefaultFileSystem, content.Downloads, null);
 				var download = downloadYaml.FirstOrDefault(n => n.Key == content.QuickDownload);
 				if (download == null)
 					throw new InvalidOperationException($"Mod QuickDownload `{content.QuickDownload}` definition not found.");
 
 				Ui.OpenWindow("PACKAGE_DOWNLOAD_PANEL", new WidgetArgs
 				{
-					{ "download", new ModContent.ModDownload(download.Value, modObjectCreator) },
+					{ "download", new ModContent.ModDownload(download.Value) },
 					{ "onSuccess", continueLoading }
 				});
 			};
