@@ -112,18 +112,22 @@ notification-primary-building-selected = Primary building selected.
 ## aircraft.yaml
 actor-carryall-reinforce =
    .name = Carryall
-   .description = Large winged, planet-bound ship
-      Automatically lifts harvesters to and from Spice fields.
-      Lifts vehicles to Repair Pads when ordered to.
+   .description =
+    Large winged, planet-bound ship
+    Automatically lifts harvesters to and from Spice fields.
+    Lifts vehicles to Repair Pads when ordered to.
 
-actor-carryall-encyclopedia = Automatically transport Harvesters between the Spice Fields and Refineries. They can also pick up units and deliver them to the Repair Pad when ordered to.
+actor-carryall-encyclopedia =
+    Automatically transport Harvesters between the Spice Fields and Refineries. They can also pick up units and deliver them to the Repair Pad when ordered to.
 
     The Carryall is a lightly armored transport aircraft. It is vulnerable to missiles and can only be hit by anti-aircraft weapons.
+
 actor-frigate-name = Frigate
 
 actor-ornithopter =
    .name = Ornithopter
-   .encyclopedia = The fastest aircraft on Dune, it is lightly armored and capable of dropping 500 lb bombs. Highly effective against infantry and lightly armored targets, with the ability to damage other armor types.
+   .encyclopedia =
+    The fastest aircraft on Dune, it is lightly armored and capable of dropping 500 lb bombs. Highly effective against infantry and lightly armored targets, with the ability to damage other armor types.
 
 actor-ornithopter-husk-name = Ornithopter
 actor-carryall-husk-name = Carryall
@@ -159,78 +163,97 @@ meta-combat-tank-husk-name = Combat Tank (Destroyed)
 ## infantry.yaml
 actor-light-inf =
    .name = Light Infantry
-   .description = General-purpose infantry.
+   .description =
+    General-purpose infantry.
       Strong vs. Infantry.
       Weak vs. Vehicles and Artillery.
-   .encyclopedia = Lightly armored foot soldiers, equipped with 9mm RP assault rifles. They are effective against infantry and lightly armored vehicles.
+   .encyclopedia =
+    Lightly armored foot soldiers, equipped with 9mm RP assault rifles. They are effective against infantry and lightly armored vehicles.
 
-    Light Infantry are resistant to missiles and large-caliber guns, but are very vulnerable to high-explosives, fire and bullet weapons.
+    Light Infantry are resistant to missiles and large-caliber guns, but are very vulnerable to high-explosives, fire, and small arms.
 
 actor-engineer =
    .name = Engineer
-   .description = Infiltrates and captures enemy structures.
+   .description =
+    Infiltrates and captures enemy
+    structures.
       Strong vs. Buildings.
       Weak vs. Everything.
       Repairs damaged cliffs.
-   .encyclopedia = Can be used to capture enemy buildings.
+   .encyclopedia =
+    Can be used to capture enemy buildings.
 
-    Engineers are resistant to anti-tank weaponry but are very vulnerable to high-explosives, fire and firearms.
+    Engineers are resistant to anti-tank weaponry but are very vulnerable to high-explosives, fire, and small arms.
 
 actor-trooper =
    .name = Trooper
-   .description = Anti-tank infantry.
+   .description =
+    Anti-tank infantry.
       Strong vs. Tanks.
       Weak vs. Infantry and Artillery.
-   .encyclopedia = Armed with wire-guided, armor-piercing missile warheads, Troopers are very effective against vehicles and buildings but struggle against infantry.
+   .encyclopedia =
+    Armed with wire-guided, armor-piercing missile warheads, Troopers are very effective against vehicles and buildings but struggle against infantry.
 
     Troopers are resistant to anti-tank weaponry but very vulnerable to high-explosives, fire and bullet weapons.
 
 actor-thumper =
    .name = Thumper Infantry
-   .description = Attracts nearby worms when deployed.
+   .description =
+    Attracts nearby worms when deployed.
       Unarmed.
-   .encyclopedia = Deploys a loud hammering device that draws Sandworms to the area.
+   .encyclopedia =
+    Deploys a loud hammering device that draws Sandworms to the area.
 
 actor-fremen =
    .name = Fremen
-   .description = Elite infantry unit with assault rifles and rockets.
+   .description =
+    Elite infantry unit with assault rifles and rockets.
       Strong vs. Infantry and Vehicles.
       Weak vs. Artillery.
       Special Ability: Invisibility.
-   .encyclopedia = The native desert warriors of Dune, armed with 10mm Assault Rifles and Rockets. Their firepower is equally effective against infantry and vehicles.
+   .encyclopedia =
+    The native desert warriors of Dune, armed with 10mm Assault Rifles and Rockets. Their firepower is equally effective against infantry and vehicles.
 
     Fremen units are very vulnerable to high-explosive and bullet weapons.
 
 actor-grenadier =
    .name = Grenadier
-   .description = Infantry with grenades.
+   .description =
+    Infantry with grenades.
       Strong vs. Buildings and Infantry.
       Weak vs. Vehicles.
-   .encyclopedia = An infantry artillery unit strong against buildings. They have a chance of exploding when killed, so should not be grouped together.
+   .encyclopedia =
+    An infantry artillery unit strong against buildings. They have a chance of exploding when killed, so should not be grouped together.
 
 actor-sardaukar =
    .name = Sardaukar
-   .description = Elite Corrino assault infantry.
+   .description =
+    Elite Corrino assault infantry.
       Strong vs. Infantry and Vehicles.
       Weak vs. Artillery.
-   .encyclopedia = Powerful heavy troopers equipped with a machine gun that is effective against infantry and a rocket launcher for targeting vehicles.
+   .encyclopedia =
+    Powerful heavy troopers equipped with a machine gun that is effective against infantry and a rocket launcher for targeting vehicles.
 
-actor-mpsardaukar-description = Elite Harkonnen assault infantry.
+actor-mpsardaukar-description =
+    Elite Harkonnen assault infantry.
       Strong vs. Infantry and Vehicles.
       Weak vs. Artillery.
 
 actor-saboteur =
    .name = Saboteur
-   .description = Sneaky infantry with explosives.
+   .description =
+    Sneaky infantry with explosives.
     Turns invisible for a limited time.
       Strong vs. Buildings.
       Weak vs. Everything.
       Special Ability: Destroys buildings.
-   .encyclopedia = A specialized military unit of House Ordos, capable of demolishing enemy buildings upon entry, but dying in the resulting explosion. It can activate stealth mode to become invisible.
+   .encyclopedia =
+    A specialized military unit of House Ordos, capable of demolishing enemy buildings upon entry, but dying in the resulting explosion. It can activate stealth mode to become invisible.
 
     The Saboteur is resistant to anti-tank weaponry, but very vulnerable to high-explosives, fire, and bullet weapons.
 
-actor-nsfremen-description = Elite infantry unit with assault rifles and rockets.
+actor-nsfremen-description =
+    Elite infantry unit with assault rifles and rockets.
       Strong vs. Infantry and Vehicles.
       Weak vs. Artillery.
 
@@ -243,40 +266,53 @@ actor-wormspawner-name = (worm spawning location)
 
 actor-upgrade-conyard =
    .name = Construction Yard Upgrade
-   .description = Unlocks additional construction options:
-    (Large Concrete Slab and Rocket Turret)
+   .description =
+    Unlocks additional construction options:
+    - Large Concrete Slab
+    - Rocket Turret
 
 actor-upgrade-barracks =
    .name = Barracks Upgrade
-   .description = Unlocks additional infantry:
-    (Trooper, Engineer and Thumper Infantry)
+   .description =
+    Unlocks additional infantry:
+    - Trooper
+    - Engineer
+    - Thumper Infantry
 
     Required to unlock faction-specific infantry:
-    (Atreides: Grenadier, Harkonnen: Sardaukar)
+    - Atreides: Grenadier
+    - Harkonnen: Sardaukar
 
 actor-upgrade-light =
    .name = Light Factory Upgrade
-   .description = Unlocks additional light units:
-    (Missile Quad)
+   .description =
+    Unlocks additional light units:
+    - Missile Quad
 
     Required to unlock a faction-specific light unit:
-    (Ordos: Stealth Raider Trike)
+    - Ordos: Stealth Raider Trike
 
 actor-upgrade-heavy =
    .name = Heavy Factory Upgrade
-   .description = Unlocks additional construction options:
-    (Repair Pad and IX Research Center)
+   .description =
+    Unlocks additional construction options:
+    - Repair Pad
+    - IX Research Center
 
     Unlocks additional heavy units:
-    (Siege Tank, Missile Tank and MCV)
+    - Siege Tank
+    - Missile Tank
+    - MCV
 
 actor-upgrade-hightech =
    .name = High Tech Factory Upgrade
-   .description = Unlocks the Atreides Air Strike superweapon.
+   .description =
+    Unlocks the Atreides Air Strike superweapon.
 
 actor-deathhand =
    .name = Death Hand
-   .encyclopedia = Armed with atomic cluster munitions, it detonates above its target, inflicting great damage over a wide area.
+   .encyclopedia =
+    Armed with atomic cluster munitions, it detonates above its target, inflicting great damage over a wide area.
 
 ## structures.yaml
 notification-construction-complete = Construction complete.
@@ -295,12 +331,14 @@ notification-saboteur-ready = Saboteur ready.
 
 meta-concrete =
    .generic-name = Structure
-   .description = Provides a strong foundation that protects
-    against terrain damage.
+   .description =
+    Provides a strong foundation that
+    protects against terrain damage.
 
 actor-concrete-a =
    .name = Concrete Slab
-   .encyclopedia = Buildings not constructed on a Concrete Slab will sustain ongoing damage from the harsh desert environment of Dune. While repairs are possible, placing structures on concrete prevents continuous weathering.
+   .encyclopedia =
+    Buildings not constructed on a Concrete Slab will sustain ongoing damage from the harsh desert environment of Dune. While repairs are possible, placing structures on concrete prevents continuous weathering.
 
     Concrete is vulnerable to most weapons and cannot be repaired once damaged.
 
@@ -309,64 +347,78 @@ actor-concrete-b-name = Large Concrete Slab
 actor-construction-yard =
    .name = Construction Yard
    .description = Produces structures.
-   .encyclopedia = Serving as the foundation of any base built on Arrakis, the Construction Yard produces a small amount of power and enables the construction of new structures. Protect this structure! It is critical to the success of your base.
+   .encyclopedia =
+    Serving as the foundation of any base built on Arrakis, the Construction Yard produces a small amount of power and enables the construction of new structures. Protect this structure! It is critical to the success of your base.
 
     Construction yards are fairly strong, but vulnerable to all weapons to varying degrees.
 
 actor-wind-trap =
    .name = Wind Trap
-   .description = Supplies power to other structures.
-   .encyclopedia = Produces power and water for your base. Large, above-ground ducts funnel wind currents underground into massive turbines, which drive power generators and humidity extractors.
+   .description =
+    Supplies power to other
+    structures.
+   .encyclopedia =
+    Produces power and water for your base. Large, above-ground ducts funnel wind currents underground into massive turbines, which drive power generators and humidity extractors.
 
     Wind Traps are vulnerable to most weapons.
 
 actor-barracks =
    .name = Barracks
    .description = Trains infantry.
-   .encyclopedia = Required for producing and training light infantry units, it can be upgraded to train advanced infantry in later missions.
+   .encyclopedia =
+    Required for producing and training light infantry units, it can be upgraded to train advanced infantry in later missions.
 
     Barracks are vulnerable to most weapons.
 
 actor-refinery =
    .name = Spice Refinery
-   .description = Harvesters unload Spice here for processing.
-   .encyclopedia = The basis of all Spice production on Dune. Harvesters transport mined Spice to the Refinery where it is converted into credits. Refined Spice is automatically distributed to Silos and Refineries for storage. Each refinery can store Spice. A Spice Harvester is delivered by Carryall once a Refinery is built.
+   .description =
+    Harvesters unload Spice here
+    for processing.
+   .encyclopedia =
+    The basis of all Spice production on Dune. Harvesters transport mined Spice to the Refinery where it is converted into credits. Refined Spice is automatically distributed to Silos and Refineries for storage. Each refinery can store Spice. A Spice Harvester is delivered by Carryall once a Refinery is built.
 
     Refineries are vulnerable to most weapons.
 
 actor-silo =
    .name = Silo
    .description = Stores excess harvested Spice.
-   .encyclopedia = Store mined Spice. Any surplus from Refineries is evenly distributed among all available Silos. If storage capacity is exceeded, excess Spice is lost. Destroyed or captured Silos redistribute their contents, provided there is sufficient space.
+   .encyclopedia =
+    Store mined Spice. Any surplus from Refineries is evenly distributed among all available Silos. If storage capacity is exceeded, excess Spice is lost. Destroyed or captured Silos redistribute their contents, provided there is sufficient space.
 
     The Spice Silo is vulnerable to most weapons.
 
 actor-light-factory =
    .name = Light Factory
    .description = Produces light vehicles.
-   .encyclopedia = Required to produce small, lightly armored combat vehicles. It can be upgraded in later missions to manufacture more advanced light vehicles.
+   .encyclopedia =
+    Required to produce small, lightly armored combat vehicles. It can be upgraded in later missions to manufacture more advanced light vehicles.
 
     A Light Factory is vulnerable to most weapons.
 
 actor-heavy-factory =
    .name = Heavy Factory
    .description = Produces heavy vehicles.
-   .encyclopedia = Enables the construction of heavy vehicles such as Harvesters and Combat Tanks. With upgrades, it unlocks advanced vehicles, though some may require additional buildings.
+   .encyclopedia =
+    Enables the construction of heavy vehicles such as Harvesters and Combat Tanks. With upgrades, it unlocks advanced vehicles, though some may require additional buildings.
 
     The Heavy Factory is vulnerable to most weapons.
 
 actor-outpost =
    .name = Outpost
-   .description = Provides a radar map of the battlefield.
-      Requires power to operate.
-   .encyclopedia = Once enough power is available, the Radar Outpost activates, providing a radar map.
+   .description =
+    Provides a radar map of the battlefield.
+    Requires power to operate.
+   .encyclopedia =
+    Once enough power is available, the Radar Outpost activates, providing a radar map.
 
     The Radar Outpost is vulnerable to most weapons.
 
 actor-starport =
    .name = Starport
    .description = Dropzone for quick reinforcements, at a price.
-   .encyclopedia = Unlocks intergalactic trade with the CHOAM Merchants' Guild, where vehicles and airborne units can be purchased at varying rates. This facility is essential for acquiring units from the Guild.
+   .encyclopedia =
+    Unlocks intergalactic trade with the CHOAM Merchants' Guild, where vehicles and airborne units can be purchased at varying rates. This facility is essential for acquiring units from the Guild.
 
     Even with heavy armor, the Starport is vulnerable to most weapons.
 
@@ -374,35 +426,41 @@ actor-wall =
    .name = Concrete Wall
    .generic-name = Structure
    .description = Stops units and blocks enemy fire.
-   .encyclopedia = The most effective defensive barriers on Dune, blocking tank fire and impeding unit movement.
+   .encyclopedia =
+    The most effective defensive barriers on Dune, blocking tank fire and impeding unit movement.
 
-    Walls can only be damaged by explosive weapons, missiles and shells. Similar to concrete slabs, they cannot be repaired once damaged.
+    Walls can only be damaged by explosive weapons, missiles and shells. Similar to Concrete Slabs, they cannot be repaired once damaged.
 
 actor-medium-gun-turret =
    .name = Gun Turret
-   .description = Defensive structure.
+   .description =
+    Defensive structure.
       Strong vs. Tanks.
       Weak vs. Infantry and Aircraft.
-   .encyclopedia = A medium-range weapon that is effective against all types of vehicle, particularly heavily armored ones. It automatically fires upon any enemy unit within its range and requires power to operate.
+   .encyclopedia =
+    A medium-range weapon that is effective against all types of vehicle, particularly heavily armored ones. It automatically fires upon any enemy unit within its range and requires power to operate.
 
-    The Gun Turret is resistant to firearms and explosive weapons, but vulnerable to missiles and high-caliber guns.
+    The Gun Turret is resistant to small arms and explosive weapons, but vulnerable to missiles and high-caliber guns.
 
 actor-large-gun-turret =
    .name = Rocket Turret
-   .description = Defensive structure.
+   .description =
+    Defensive structure.
+    Requires power to operate.
       Strong vs. Infantry and Aircraft.
       Weak vs. Tanks.
-
-      Requires power to operate.
-   .encyclopedia = An enhanced defensive structure with a longer range and faster rate of fire than the Gun Turret. Its advanced targeting system requires power to operate.
+   .encyclopedia =
+    An enhanced defensive structure with a longer range and faster rate of fire than the Gun Turret. Its advanced targeting system requires power to operate.
 
     The Rocket Turret is resistant to firearms and explosive weapons, but vulnerable to missiles and high-caliber guns.
 
 actor-repair-pad =
    .name = Repair Pad
-   .description = Repairs vehicles.
-     Allows MCVs to be built.
-   .encyclopedia = Repairs units for a fraction of their production cost.
+   .description =
+    Repairs vehicles.
+    Allows MCVs to be built.
+   .encyclopedia =
+    Repairs units for a fraction of their production cost.
 
     The Repair Pad is vulnerable to most weapons.
 
@@ -411,21 +469,24 @@ actor-high-tech-factory =
    .description = Unlocks advanced technology.
    .airstrikepower-name = Air Strike
    .airstrikepower-description = Ornithopters bomb the target.
-   .encyclopedia = Produces airborne units, and is required to build Carryalls. House Atreides can upgrade this facility to build Ornithopters for air strikes in later missions.
+   .encyclopedia =
+    Produces airborne units, and is required to build Carryalls. House Atreides can upgrade this facility to build Ornithopters for air strikes in later missions.
 
     The High Tech Factory is vulnerable to most weapons.
 
 actor-research-centre =
    .name = IX Research Center
    .description = Unlocks advanced tanks.
-   .encyclopedia = Provides technology upgrades for both structures and vehicles. This facility is required to develop advanced special weapons and prototypes.
+   .encyclopedia =
+    Provides technology upgrades for both structures and vehicles. This facility is required to develop advanced special weapons and prototypes.
 
     The IX Research Center is vulnerable to most weapons.
 
 actor-palace =
    .name = Palace
    .description = Unlocks elite infantry and weapons.
-   .encyclopedia = Serves as the command center once built, offering additional options and special weapons.
+   .encyclopedia =
+    Serves as the command center once built, offering additional options and special weapons.
 
     Even with heavy armor, the Palace is vulnerable to most weapons.
    .nukepower-name = Death Hand
@@ -445,62 +506,76 @@ actor-palace =
 ## vehicles.yaml
 actor-mcv =
    .name = Mobile Construction Vehicle
-   .description = Deploys into a Construction Yard.
+   .description =
+    Deploys into a Construction Yard.
       Unarmed.
-   .encyclopedia = Must be driven to an area where it can be deployed. After finding a suitable rock surface, the MCV can be transformed into a Construction Yard.
+   .encyclopedia =
+    Must be driven to an area where it can be deployed. After finding a suitable rock surface, the MCV can be transformed into a Construction Yard.
 
     MCVs are resistant to bullets and light-explosives. They are vulnerable to missiles and high-caliber guns.
 
 actor-harvester =
    .name = Spice Harvester
-   .description = Collects Spice for processing.
+   .description =
+    Collects Spice for processing.
       Unarmed.
-   .encyclopedia = Resistant to bullets, and to some degree, high explosives. They are vulnerable to missiles and high-caliber guns.
+   .encyclopedia =
+    Resistant to bullets, and to some degree, high explosives. They are vulnerable to missiles and high-caliber guns.
 
     A Harvester is included with a Refinery.
 
 actor-trike =
    .name = Trike
-   .description = Fast scout.
+   .description =
+    Fast scout.
       Strong vs. Infantry.
       Weak vs. Tanks.
-   .encyclopedia = Lightly armored, three-wheeled vehicles armed with heavy machine guns, effective against infantry and lightly armored vehicles.
+   .encyclopedia =
+    Lightly armored, three-wheeled vehicles armed with heavy machine guns, effective against infantry and lightly armored vehicles.
 
     Trikes are vulnerable to most weapons, high-caliber guns are slightly less effective against them.
 
 actor-quad =
    .name = Missile Quad
-   .description = Missile Scout.
+   .description =
+    Missile Scout.
       Strong vs. Vehicles.
       Weak vs. Infantry.
-   .encyclopedia = Superior to the Trike in both armor and firepower, the Quad is a four-wheeled vehicle firing armor-piercing rockets. It is effective against most vehicles.
+   .encyclopedia =
+    Superior to the Trike in both armor and firepower, the Quad is a four-wheeled vehicle firing armor-piercing rockets. It is effective against most vehicles.
 
     Quads are resistant to bullets and, to a lesser degree, explosives. They are vulnerable to missiles and high-caliber guns.
 
 actor-siege-tank =
    .name = Siege Tank
-   .description = Siege Artillery.
+   .description =
+    Siege Artillery.
       Strong vs. Infantry and Buildings.
       Weak vs. Tanks.
-   .encyclopedia = Incredibly effective against infantry and lightly armored vehicles, but struggles against heavily armored targets. It has a long firing range.
+   .encyclopedia =
+    Incredibly effective against infantry and lightly armored vehicles, but struggles against heavily armored targets. It has a long firing range.
 
     Siege Tanks are resistant to bullets, and to some degree, explosives. They are vulnerable to missiles and high-caliber guns.
 
 actor-missile-tank =
    .name = Missile Tank
-   .description = Rocket Artillery.
+   .description =
+    Rocket Artillery.
       Strong vs. Vehicles, Buildings and Aircraft.
       Weak vs. Infantry.
-   .encyclopedia = Shoots down aircraft and is effective against most targets, except infantry.
+   .encyclopedia =
+    Shoots down aircraft and is effective against most targets, except infantry.
 
     Missile Tanks are vulnerable to most weapons, high-caliber guns are slightly less effective.
 
 actor-sonic-tank =
    .name = Sonic Tank
-   .description = Fires sonic shocks.
+   .description =
+    Fires sonic shocks.
       Strong vs. Infantry and Vehicles.
       Weak vs. Artillery.
-   .encyclopedia = Most effective against infantry and lightly armored vehicles, but weaker against armored targets.
+   .encyclopedia =
+    Most effective against infantry and lightly armored vehicles, but weaker against armored targets.
 
     Its sonic waves damage all units in their path.
 
@@ -508,56 +583,68 @@ actor-sonic-tank =
 
 actor-devastator =
    .name = Devastator
-   .description = Super Heavy Tank.
+   .description =
+    Super Heavy Tank.
       Strong vs. Tanks.
       Weak vs. Artillery.
-   .encyclopedia = As the most powerful tank on Dune, the Devastator is slow but highly effective against most units. It fires dual plasma charges and can self-destruct on command, damaging nearby units and structures.
+   .encyclopedia =
+    As the most powerful tank on Dune, the Devastator is slow but highly effective against most units. It fires dual plasma charges and can self-destruct on command, damaging nearby units and structures.
 
     Resistant to bullets and high explosives, but vulnerable to missiles and high-caliber guns.
 
 actor-raider =
    .name = Raider Trike
-   .description = Improved Scout.
+   .description =
+    Improved Scout.
       Strong vs. Infantry and Light Vehicles.
       Weak vs. Tanks.
-   .encyclopedia = Raider Trikes, upgraded by House Ordos, have enhanced firepower, speed, and armor. Equipped with dual 20mm cannons, they are strong against infantry and lightly armored vehicles.
+   .encyclopedia =
+    Raider Trikes, upgraded by House Ordos, have enhanced firepower, speed, and armor. Equipped with dual 20mm cannons, they are strong against infantry and lightly armored vehicles.
 
     Raiders are vulnerable to most weapons, though high-caliber guns are slightly less effective against them.
 
 actor-stealth-raider =
    .name = Stealth Raider Trike
-   .description = Invisible Raider Trike.
+   .description =
+    Invisible Raider Trike.
       Strong vs. Infantry and Light Vehicles.
       Weak vs. Tanks.
-   .encyclopedia = A cloaked version of the Raider, good for stealth attacks. It uncloaks when it fires its machine guns.
+   .encyclopedia =
+    A cloaked version of the Raider, good for stealth attacks. It uncloaks when it fires its machine guns.
 
 actor-deviator =
    .name = Deviator
-   .description = Fires a warhead that changes
-    the allegiance of enemy vehicles.
-   .encyclopedia = Fires missiles that release a silicon cloud, temporarily altering the allegiance of targeted vehicles. Personnel are only slightly affected by the cloud.
+   .description =
+    Fires a warhead that changes the
+    allegiance of enemy vehicles.
+   .encyclopedia =
+    Fires missiles that release a silicon cloud, temporarily altering the allegiance of targeted vehicles. Personnel are only slightly affected by the cloud.
 
     The Deviator is vulnerable to most weapons, high-caliber guns are slightly less effective.
 
-meta-combat-tank-description = Main Battle Tank.
+meta-combat-tank-description =
+    Main Battle Tank.
       Strong vs. Tanks.
       Weak vs. Infantry.
 
 actor-combat-tank-a =
    .name = Atreides Combat Tank
-   .encyclopedia = Effective against most vehicles but less suited against lightly armored targets.
+   .encyclopedia =
+    Effective against most vehicles but less suited against lightly armored targets.
 
     Resistant to bullets and heavy explosives, but vulnerable to missiles and high-caliber guns.
 
 actor-combat-tank-h =
    .name = Harkonnen Combat Tank
-   .encyclopedia = Effective against most vehicles but less suited against lightly armored targets.
+   .encyclopedia =
+    Effective against most vehicles but less suited against lightly armored targets.
 
     Stronger than its counterparts, but also slower.
 
 actor-combat-tank-o =
    .name = Ordos Combat Tank
-   .encyclopedia = Effective against most vehicles but less suited against lightly armored targets.
+   .encyclopedia =
+    Effective against most vehicles but less suited against lightly armored targets.
 
     The fastest variant of Combat Tank, but also the weakest.
 
