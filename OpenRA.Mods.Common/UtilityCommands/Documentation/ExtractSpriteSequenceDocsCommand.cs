@@ -11,24 +11,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
 using OpenRA.Graphics;
 using OpenRA.Mods.Common.Graphics;
+using OpenRA.Mods.Common.UtilityCommands.Documentation.Objects;
 using OpenRA.Primitives;
 
-namespace OpenRA.Mods.Common.UtilityCommands
+namespace OpenRA.Mods.Common.UtilityCommands.Documentation
 {
 	sealed class ExtractSpriteSequenceDocsCommand : IUtilityCommand
 	{
 		string IUtilityCommand.Name => "--sprite-sequence-docs";
 
-		bool IUtilityCommand.ValidateArguments(string[] args)
-		{
-			return true;
-		}
+		bool IUtilityCommand.ValidateArguments(string[] args) => true;
 
 		[Desc("[VERSION]", "Generate sprite sequence documentation in JSON format.")]
 		void IUtilityCommand.Run(Utility utility, string[] args)
@@ -54,12 +51,12 @@ namespace OpenRA.Mods.Common.UtilityCommands
 
 			var sequenceTypesInfo = sequenceTypes
 				.Where(x => !x.ContainsGenericParameters && !x.IsAbstract)
-				.Select(type => new
+				.Select(type => new ExtractedClassInfo
 				{
-					type.Namespace,
-					type.Name,
-					Description = string.Join(" ", Utility.GetCustomAttributes<DescAttribute>(type, false).SelectMany(d => d.Lines)),
+					Namespace = type.Namespace,
+					Name = type.Name,
 					Filename = Utilities.GetSourceFilenameFromPdb(type, pdbReaderCache),
+					Description = string.Join(" ", type.GetCustomAttributes<DescAttribute>(false).SelectMany(d => d.Lines)),
 					InheritedTypes = type.BaseTypes()
 						.Select(y => y.Name)
 						.Where(y => y != type.Name && y != "Object"),
@@ -67,7 +64,7 @@ namespace OpenRA.Mods.Common.UtilityCommands
 						.Where(fi => fi.FieldType.IsGenericType && fi.FieldType.GetGenericTypeDefinition() == typeof(SpriteSequenceField<>))
 						.Select(fi =>
 						{
-							var description = string.Join(" ", Utility.GetCustomAttributes<DescAttribute>(fi, false)
+							var description = string.Join(" ", fi.GetCustomAttributes<DescAttribute>(false)
 								.SelectMany(d => d.Lines));
 
 							var valueType = fi.FieldType.GetGenericArguments()[0];
@@ -82,7 +79,7 @@ namespace OpenRA.Mods.Common.UtilityCommands
 							if (defaultValueField != null && defaultValueField.FieldType.IsEnum)
 								relatedEnumTypes.Add(defaultValueField.FieldType);
 
-							return new
+							return new ExtractedClassFieldInfo
 							{
 								PropertyName = key,
 								DefaultValue = defaultValue?.ToString(),
@@ -93,22 +90,11 @@ namespace OpenRA.Mods.Common.UtilityCommands
 						})
 				});
 
-			var relatedEnums = relatedEnumTypes.OrderBy(t => t.Name).Select(type => new
-			{
-				type.Namespace,
-				type.Name,
-				Values = Enum.GetNames(type).Select(x => new
-				{
-					Key = Convert.ToInt32(Enum.Parse(type, x), NumberFormatInfo.InvariantInfo),
-					Value = x
-				})
-			});
-
 			var result = new
 			{
 				Version = version,
 				SpriteSequenceTypes = sequenceTypesInfo,
-				RelatedEnums = relatedEnums
+				RelatedEnums = DocumentationHelpers.GetRelatedEnumInfos(relatedEnumTypes)
 			};
 
 			return JsonConvert.SerializeObject(result);
