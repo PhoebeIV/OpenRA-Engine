@@ -9,7 +9,7 @@
 						TerrainFeatureSize: 20480
 						ForestFeatureSize: 20480
 						ResourceFeatureSize: 20480
-						Water: 200
+						Water: 0
 						Mountains: 100
 						Forests: 25
 						ForestCutout: 2
@@ -37,24 +37,25 @@
 						MinimumSpawnRadius: 5
 						SpawnResourceSpawns: 3
 						SpawnReservation: 16
-						SpawnResourceBias: 1150
+						SpawnResourceBias: 1050
 						ResourcesPerPlayer: 50000
-						OreUniformity: 250
-						OreClumpiness: 2
+						OreUniformity: 500
+						OreClumpiness: 1
 						MaximumExpansionResourceSpawns: 5
 						MaximumResourceSpawnsPerExpansion: 2
 						MinimumExpansionSize: 2
 						MaximumExpansionSize: 12
 						ExpansionInner: 2
 						ExpansionBorder: 1
-						DefaultResource: Ore
+						DefaultResource: Tiberium
 						ResourceSpawnSeeds:
-							mine: Ore
-							gmine: Gems
+							split2: Tiberium
+							split3: Tiberium
+							splitblue: BlueTiberium
 						ClearTerrain: Clear
-						PlayableTerrain: Beach,Bridge,Clear,Gems,Ore,Road,Rough,Wall,Water
-						PartiallyPlayableTerrain: Tree
-						UnplayableTerrain: River,Rock
+						PlayableTerrain: Beach,BlueTiberium,Bridge,Clear,Road,Rough,Tiberium,Wall
+						PartiallyPlayableTerrain: River,Tree,Water
+						UnplayableTerrain: Rock
 						DominantTerrain: River,Rock,Tree,Water
 						ZoneableTerrain: Clear,Road
 						PartiallyPlayableCategories: Beach,Road
@@ -65,39 +66,43 @@
 						ForestObstacles: Trees
 						UnplayableObstacles: Obstructions
 			Option@hidden_tileset_overrides:
-				Choice@desert:
-					Tileset: DESERT
-					Settings:
-						LandTile: 255
-						WaterTile: 256
-				Choice@temperat:
-					Tileset: TEMPERAT
+				Choice@common:
+					Tileset: DESERT,JUNGLE,SNOW,TEMPERAT
 					Settings:
 						LandTile: 255
 						WaterTile: 1
-				Choice@snow:
-					Tileset: SNOW
+						RepaintTiles:
+							1: Water
+				Choice@winter:
+					Tileset: WINTER
 					Settings:
 						LandTile: 255
 						WaterTile: 1
+						RepaintTiles:
+							255: Snow
+							1: Water
 			Option@Seed:
-				Label: label-ra-map-generator-option-seed
+				Label: label-cnc-map-generator-option-seed
 				Random: True
 				Default: 0
 				Integer: Seed
 			Option@TerrainType:
-				Label: label-ra-map-generator-option-terrain-type
+				Label: label-cnc-map-generator-option-terrain-type
 				Priority: 2
-				Default: Gardens
+				Default: Gardens,Rocky
 				Choice@Lakes:
-					Label: label-ra-map-generator-choice-terrain-type-lakes
+					Label: label-cnc-map-generator-choice-terrain-type-lakes
+					Tileset: DESERT
 					Settings:
+						Water: 200
 				Choice@Puddles:
-					Label: label-ra-map-generator-choice-terrain-type-puddles
+					Label: label-cnc-map-generator-choice-terrain-type-puddles
+					Tileset: DESERT
 					Settings:
 						Water: 100
 				Choice@Gardens:
-					Label: label-ra-map-generator-choice-terrain-type-gardens
+					Label: label-cnc-map-generator-choice-terrain-type-gardens
+					Tileset: DESERT
 					Settings:
 						Water: 50
 						Forests: 300
@@ -106,16 +111,16 @@
 						RoadSpacing: 3
 						RoadShrink: 4
 				Choice@Plains:
-					Label: label-ra-map-generator-choice-terrain-type-plains
+					Label: label-cnc-map-generator-choice-terrain-type-plains
 					Settings:
 						Water: 0
 				Choice@Parks:
-					Label: label-ra-map-generator-choice-terrain-type-parks
+					Label: label-cnc-map-generator-choice-terrain-type-parks
 					Settings:
 						Water: 0
 						Forests: 100
 				Choice@Woodlands:
-					Label: label-ra-map-generator-choice-terrain-type-woodlands
+					Label: label-cnc-map-generator-choice-terrain-type-woodlands
 					Settings:
 						Water: 0
 						Forests: 400
@@ -124,7 +129,7 @@
 						RoadSpacing: 3
 						RoadShrink: 4
 				Choice@Overgrown:
-					Label: label-ra-map-generator-choice-terrain-type-overgrown
+					Label: label-cnc-map-generator-choice-terrain-type-overgrown
 					Settings:
 						Water: 0
 						Forests: 500
@@ -132,7 +137,7 @@
 						Mountains: 500
 						Roughness: 250
 				Choice@Rocky:
-					Label: label-ra-map-generator-choice-terrain-type-rocky
+					Label: label-cnc-map-generator-choice-terrain-type-rocky
 					Settings:
 						Water: 0
 						Forests: 300
@@ -143,105 +148,78 @@
 						RoadSpacing: 3
 						RoadShrink: 4
 				Choice@Mountains:
-					Label: label-ra-map-generator-choice-terrain-type-mountains
+					Label: label-cnc-map-generator-choice-terrain-type-mountains
 					Settings:
 						Water: 0
 						Mountains: 1000
 						Roughness: 600
 						MinimumTerrainContourSpacing: 5
 				Choice@MountainLakes:
-					Label: label-ra-map-generator-choice-terrain-type-mountain-lakes
+					Label: label-cnc-map-generator-choice-terrain-type-mountain-lakes
+					Tileset: DESERT
 					Settings:
 						Water: 200
 						Mountains: 1000
 						Roughness: 850
 						MinimumTerrainContourSpacing: 5
-				Choice@Oceanic:
-					Label: label-ra-map-generator-choice-terrain-type-oceanic
-					Settings:
-						Water: 800
-						Forests: 0
-						MinimumSpawnRadius: 4
-				Choice@LargeIslands:
-					Label: label-ra-map-generator-choice-terrain-type-large-islands
-					Settings:
-						Water: 750
-						TerrainFeatureSize: 51200
-						Forests: 0
-				Choice@Continents:
-					Label: label-ra-map-generator-choice-terrain-type-continents
-					Settings:
-						Water: 500
-						TerrainFeatureSize: 102400
-				Choice@Wetlands:
-					Label: label-ra-map-generator-choice-terrain-type-wetlands
-					Settings:
-						Water: 500
-				Choice@NarrowWetlands:
-					Label: label-ra-map-generator-choice-terrain-type-narrow-wetlands
-					Settings:
-						Water: 500
-						TerrainFeatureSize: 5120
-						Forests: 0
-						SpawnBuildSize: 6
-						MinimumSpawnRadius: 4
 			Option@Rotations:
-				Label: label-ra-map-generator-option-rotations
+				Label: label-cnc-map-generator-option-rotations
 				SimpleChoice: Rotations
 					Values: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
 				Default: 2
 				Priority: 1
 			Option@Mirror:
-				Label: label-ra-map-generator-option-mirror
+				Label: label-cnc-map-generator-option-mirror
 				Default: None
 				Priority: 1
 				Choice@None:
-					Label: label-ra-map-generator-choice-mirror-none
+					Label: label-cnc-map-generator-choice-mirror-none
 					Settings:
 						Mirror: None
 				Choice@LeftMatchesRight:
-					Label: label-ra-map-generator-choice-mirror-left-matches-right
+					Label: label-cnc-map-generator-choice-mirror-left-matches-right
 					Settings:
 						Mirror: LeftMatchesRight
 				Choice@TopLeftMatchesBottomRight:
-					Label: label-ra-map-generator-choice-mirror-top-left-matches-bottom-right
+					Label: label-cnc-map-generator-choice-mirror-top-left-matches-bottom-right
 					Settings:
 						Mirror: TopLeftMatchesBottomRight
 				Choice@TopMatchesBottom:
-					Label: label-ra-map-generator-choice-mirror-top-matches-bottom
+					Label: label-cnc-map-generator-choice-mirror-top-matches-bottom
 					Settings:
 						Mirror: TopMatchesBottom
 				Choice@TopRightMatchesBottomLeft:
-					Label: label-ra-map-generator-choice-mirror-top-right-matches-bottom-left
+					Label: label-cnc-map-generator-choice-mirror-top-right-matches-bottom-left
 					Settings:
 						Mirror: TopRightMatchesBottomLeft
 			Option@Shape:
-				Label: label-ra-map-generator-option-shape
+				Label: label-cnc-map-generator-option-shape
 				Default: Square
 				Priority: 1
 				Choice@Square:
-					Label: label-ra-map-generator-choice-shape-square
+					Label: label-cnc-map-generator-choice-shape-square
 					Settings:
 						ExternalCircularBias: 0
 				Choice@CircleMountain:
-					Label: label-ra-map-generator-choice-shape-circle-mountain
+					Label: label-cnc-map-generator-choice-shape-circle-mountain
 					Settings:
 						ExternalCircularBias: 1
 				Choice@CircleWater:
-					Label: label-ra-map-generator-choice-shape-circle-water
+					Label: label-cnc-map-generator-choice-shape-circle-water
+					Tileset: DESERT
 					Settings:
 						ExternalCircularBias: -1
 			Option@Players:
-				Label: label-ra-map-generator-option-players
+				Label: label-cnc-map-generator-option-players
 				SimpleChoice: Players
 					Values: 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16
 				Default: 1
 				Priority: 1
 			Option@Resources:
-				Label: label-ra-map-generator-option-resources
+				Label: label-cnc-map-generator-option-resources
 				Default: Medium
 				Choice@None:
-					Label: label-ra-map-generator-choice-resources-none
+					Label: label-cnc-map-generator-choice-resources-none
 					Settings:
 						SpawnResourceSpawns: 0
 						ResourcesPerPlayer: 0
@@ -249,46 +227,50 @@
 						MaximumExpansionResourceSpawns: 0
 						MaximumResourceSpawnsPerExpansion: 1
 				Choice@Low:
-					Label: label-ra-map-generator-choice-resources-low
+					Label: label-cnc-map-generator-choice-resources-low
 					Settings:
-						SpawnResourceSpawns: 2
+						SpawnResourceSpawns: 1
 						ResourcesPerPlayer: 25000
 						ResourceSpawnWeights:
-							mine: 1
-						MaximumExpansionResourceSpawns: 3
+							split2: 1
+							split3: 1
+						MaximumExpansionResourceSpawns: 2
 						MaximumResourceSpawnsPerExpansion: 1
 				Choice@Medium:
-					Label: label-ra-map-generator-choice-resources-medium
+					Label: label-cnc-map-generator-choice-resources-medium
 					Settings:
-						SpawnResourceSpawns: 3
+						SpawnResourceSpawns: 2
 						ResourcesPerPlayer: 50000
 						ResourceSpawnWeights:
-							mine: 95
-							gmine: 5
-						MaximumExpansionResourceSpawns: 5
-						MaximumResourceSpawnsPerExpansion: 2
+							split2: 95
+							split3: 95
+							splitblue: 10
+						MaximumExpansionResourceSpawns: 3
+						MaximumResourceSpawnsPerExpansion: 1
 				Choice@High:
-					Label: label-ra-map-generator-choice-resources-high
+					Label: label-cnc-map-generator-choice-resources-high
 					Settings:
 						SpawnResourceSpawns: 3
 						ResourcesPerPlayer: 75000
 						ResourceSpawnWeights:
-							mine: 9
-							gmine: 1
-						MaximumExpansionResourceSpawns: 8
-						MaximumResourceSpawnsPerExpansion: 3
+							split2: 9
+							split3: 9
+							splitblue: 2
+						MaximumExpansionResourceSpawns: 5
+						MaximumResourceSpawnsPerExpansion: 2
 				Choice@VeryHigh:
-					Label: label-ra-map-generator-choice-resources-very-high
+					Label: label-cnc-map-generator-choice-resources-very-high
 					Settings:
 						SpawnResourceSpawns: 4
 						ResourcesPerPlayer: 100000
 						ResourceSpawnWeights:
-							mine: 8
-							gmine: 2
-						MaximumExpansionResourceSpawns: 10
-						MaximumResourceSpawnsPerExpansion: 3
+							split2: 8
+							split3: 8
+							splitblue: 4
+						MaximumExpansionResourceSpawns: 8
+						MaximumResourceSpawnsPerExpansion: 2
 				Choice@Full:
-					Label: label-ra-map-generator-choice-resources-full
+					Label: label-cnc-map-generator-choice-resources-full
 					Settings:
 						SpawnResourceSpawns: 0
 						ResourcesPerPlayer: 1000000000
@@ -296,94 +278,93 @@
 						MaximumExpansionResourceSpawns: 0
 						MaximumResourceSpawnsPerExpansion: 1
 			Option@Buildings:
-				Label: label-ra-map-generator-option-buildings
+				Label: label-cnc-map-generator-option-buildings
 				Default: Standard
 				Choice@None:
-					Label: label-ra-map-generator-choice-buildings-none
+					Label: label-cnc-map-generator-choice-buildings-none
 					Settings:
 						MinimumBuildings: 0
 						MaximumBuildings: 0
 						BuildingWeights:
 				Choice@Standard:
-					Label: label-ra-map-generator-choice-buildings-standard
+					Label: label-cnc-map-generator-choice-buildings-standard
 					Settings:
 						MinimumBuildings: 0
 						MaximumBuildings: 3
 						BuildingWeights:
 							hosp: 2
 							miss: 1
-							oilb: 9
+							v19: 9
 				Choice@Extra:
-					Label: label-ra-map-generator-choice-buildings-extra
+					Label: label-cnc-map-generator-choice-buildings-extra
 					Settings:
 						MinimumBuildings: 3
 						MaximumBuildings: 6
 						BuildingWeights:
-							fcom: 3
 							hosp: 2
 							miss: 1
-							oilb: 9
-							pbox: 2
+							v19: 9
+							gtwr: 2
 				Choice@OilOnly:
-					Label: label-ra-map-generator-choice-buildings-oil-only
+					Label: label-cnc-map-generator-choice-buildings-oil-only
 					Settings:
 						MinimumBuildings: 0
 						MaximumBuildings: 3
 						BuildingWeights:
-							oilb: 1
+							v19: 1
 				Choice@OilRush:
-					Label: label-ra-map-generator-choice-buildings-oil-rush
+					Label: label-cnc-map-generator-choice-buildings-oil-rush
 					Settings:
 						MinimumBuildings: 8
 						MaximumBuildings: 10
 						BuildingWeights:
-							oilb: 1
+							v19: 1
 			Option@Density:
-				Label: label-ra-map-generator-option-density
+				Label: label-cnc-map-generator-option-density
 				Default: Players
 				Priority: 1
 				Choice@Players:
-					Label: label-ra-map-generator-choice-density-players
+					Label: label-cnc-map-generator-choice-density-players
 					Settings:
 						AreaEntityBonus: 0
 						PlayerCountEntityBonus: 1000000
 				Choice@AreaAndPlayers:
-					Label: label-ra-map-generator-choice-density-area-and-players
+					Label: label-cnc-map-generator-choice-density-area-and-players
 					Settings:
 						AreaEntityBonus: 200
 						PlayerCountEntityBonus: 500000
 				Choice@AreaVeryLow:
-					Label: label-ra-map-generator-choice-density-area-very-low
+					Label: label-cnc-map-generator-choice-density-area-very-low
 					Settings:
 						AreaEntityBonus: 100
 						PlayerCountEntityBonus: 0
 				Choice@AreaLow:
-					Label: label-ra-map-generator-choice-density-area-low
+					Label: label-cnc-map-generator-choice-density-area-low
 					Settings:
 						AreaEntityBonus: 200
 						PlayerCountEntityBonus: 0
 				Choice@AreaMedium:
-					Label: label-ra-map-generator-choice-density-area-medium
+					Label: label-cnc-map-generator-choice-density-area-medium
 					Settings:
 						AreaEntityBonus: 400
 						PlayerCountEntityBonus: 0
 				Choice@AreaHigh:
-					Label: label-ra-map-generator-choice-density-area-high
+					Label: label-cnc-map-generator-choice-density-area-high
 					Settings:
 						AreaEntityBonus: 600
 						PlayerCountEntityBonus: 0
 				Choice@AreaVeryHigh:
-					Label: label-ra-map-generator-choice-density-area-very-high
+					Label: label-cnc-map-generator-choice-density-area-very-high
 					Settings:
 						AreaEntityBonus: 800
 						PlayerCountEntityBonus: 0
 			Option@DenyWalledArea:
-				Label: label-ra-map-generator-option-deny-walled-areas
+				Label: label-cnc-map-generator-option-deny-walled-areas
 				Checkbox: DenyWalledAreas
 				Default: True
 				Priority: 1
 			Option@Roads:
-				Label: label-ra-map-generator-option-roads
+				Label: label-cnc-map-generator-option-roads
 				Checkbox: Roads
 				Default: True
 				Priority: 1
@@ -393,43 +374,13 @@
 		Settings:
 			Option@Tile:
 				Label: label-clear-map-generator-option-tile
-				Choice@DesertClear:
+				Choice@CommonClear:
 					Label: label-clear-map-generator-choice-tile-clear
-					Tileset: DESERT
+					Tileset: DESERT,JUNGLE,SNOW,TEMPERAT,WINTER
 					Settings:
 						Tile: 255
-				Choice@DesertWater:
+				Choice@CommonWater:
 					Label: label-clear-map-generator-choice-tile-water
-					Tileset: DESERT
-					Settings:
-						Tile: 256
-				Choice@SnowClear:
-					Label: label-clear-map-generator-choice-tile-clear
-					Tileset: SNOW
-					Settings:
-						Tile: 255
-				Choice@SnowWater:
-					Label: label-clear-map-generator-choice-tile-water
-					Tileset: SNOW
+					Tileset: DESERT,JUNGLE,SNOW,TEMPERAT,WINTER
 					Settings:
 						Tile: 1
-				Choice@TemperatClear:
-					Label: label-clear-map-generator-choice-tile-clear
-					Tileset: TEMPERAT
-					Settings:
-						Tile: 255
-				Choice@TemperatWater:
-					Label: label-clear-map-generator-choice-tile-water
-					Tileset: TEMPERAT
-					Settings:
-						Tile: 1
-				Choice@InteriorClear:
-					Label: label-clear-map-generator-choice-tile-clear
-					Tileset: INTERIOR
-					Settings:
-						Tile: 275
-				Choice@InteriorEmpty:
-					Label: label-clear-map-generator-choice-tile-empty
-					Tileset: INTERIOR
-					Settings:
-						Tile: 255
