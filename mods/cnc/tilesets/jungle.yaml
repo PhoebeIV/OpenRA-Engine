@@ -2627,3 +2627,24 @@ MultiBrushCollections:
 			Template: 76
 		MultiBrush@77:
 			Template: 77
+	CivilianBuildings:
+		MultiBrush@v01:
+			Actor: v01
+		MultiBrush@v02:
+			Actor: v02
+		MultiBrush@v03:
+			Actor: v03
+		MultiBrush@v04:
+			Actor: v04
+		MultiBrush@v05:
+			Actor: v05
+		MultiBrush@v07:
+			Actor: v07
+		MultiBrush@v08:
+			Actor: v08
+		MultiBrush@v09:
+			Actor: v09
+		MultiBrush@v10:
+			Actor: v10
+		MultiBrush@v11:
+			Actor: v11
