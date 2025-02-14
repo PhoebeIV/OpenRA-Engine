@@ -110,12 +110,6 @@ namespace OpenRA.Mods.Common.Traits
 
 			using (new PerfSample("bot_attack_response"))
 			{
-				Sync.RunUnsynced(Game.Settings.Debug.SyncCheckBotModuleCode, world, () =>
-				{
-					foreach (var t in attackResponseModules)
-						if (t.IsTraitEnabled())
-							t.RespondToAttack(this, self, e);
-				});
 			}
 		}
 	}

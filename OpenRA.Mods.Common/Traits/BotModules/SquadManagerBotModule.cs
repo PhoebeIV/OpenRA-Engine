@@ -493,16 +493,6 @@ namespace OpenRA.Mods.Common.Traits
 
 		void IBotRespondToAttack.RespondToAttack(IBot bot, Actor self, AttackInfo e)
 		{
-			if (!IsPreferredEnemyUnit(e.Attacker))
-				return;
-
-			if (Info.ProtectionTypes.Contains(self.Info.Name))
-			{
-				foreach (var n in notifyPositionsUpdated)
-					n.UpdatedDefenseCenter(e.Attacker.Location);
-
-				ProtectOwn(bot, e.Attacker);
-			}
 		}
 
 		List<MiniYamlNode> IGameSaveTraitData.IssueTraitData(Actor self)
